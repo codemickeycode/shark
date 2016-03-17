@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>{% if title %}
+        <title>{{ title }}</title>
+{% endif %}
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">{% if description %}
+        <meta name="description" content="{{ description }}">
+{% endif %}{% if keywords %}
+        <meta name="keywords" content="{{ keywords }}">
+{% endif %}{% if author %}
+        <meta name="author" content="{{ author }}">
+{% endif %}
+{{ extra_css|safe }}{% if css %}
+        <style>
+{{ css|safe }}
+        </style>{% endif %}
+    </head>
+    <body>
+{{ modals|safe }}{{ content|safe }}
+        <script src="/static/shark/js/jquery-1.11.1.min.js"></script>
+        <script src="/static/shark/js/bootstrap.min.js"></script>
+        <script src="/static/shark/js/base.js"></script>{% if extra_js %}
+{{ extra_js|safe }}{% endif %}
+        <script type="text/javascript">{% if javascript %}
+        {{ javascript|safe }}{% endif %}
+            var csrf_token = getCookie('csrftoken');
+            var keep_variables = JSON.stringify({{ keep_variables|safe }})
+        </script>
+    </body>
+</html>

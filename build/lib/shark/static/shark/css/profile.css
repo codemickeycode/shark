@@ -1,0 +1,35 @@
+.m-b-lg {
+    margin-bottom: 45px !important;
+}
+
+.m-b-0 {
+    margin-bottom: 0 !important;
+}
+
+.m-b {
+    margin-bottom: 15px !important;
+}
+
+.panel-profile .panel-heading {
+    height: 150px;
+    background-size: cover;
+}
+
+.panel-profile-img {
+    max-width: 150px;
+    margin-top: -90px;
+    margin-bottom: 5px;
+    border: 3px solid #fff;
+    border-radius: 100%;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+
+.panel-profile .panel-title {
+    margin-bottom: 5px;
+}
+
+.panel-profile h5 {
+    font-size: 17px;
+    font-weight: 400;
+    margin-bottom: 8px;
+}
