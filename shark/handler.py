@@ -455,20 +455,24 @@ class SiteMap(BaseHandler):
         urls = set()
 
         handlers = set()
-        for pattern in get_resolver().url_patterns:
-            if isinstance(pattern, RegexURLResolver):
-                pass
-            elif isinstance(pattern, RegexURLPattern):
-                if 'handler' in pattern.default_args and issubclass(pattern.default_args['handler'], BaseHandler):
-                    handler = pattern.default_args['handler']
-                    if handler not in handlers:
-                        handlers.add(handler)
-                        for args in handler.get_sitemap(include_false):
-                            if isinstance(args, str) or not isinstance(args, Iterable):
-                                args=[args]
-                            urls.add(handler.url(*args))
-                            if handler.enable_amp:
-                                urls.add(handler.amp_url(*args))
+
+        def add_patterns(patterns):
+            for pattern in patterns:
+                if isinstance(pattern, RegexURLResolver):
+                    add_patterns(pattern.url_patterns)
+                elif isinstance(pattern, RegexURLPattern):
+                    if 'handler' in pattern.default_args and issubclass(pattern.default_args['handler'], BaseHandler):
+                        handler = pattern.default_args['handler']
+                        if handler not in handlers:
+                            handlers.add(handler)
+                            for args in handler.get_sitemap(include_false):
+                                if isinstance(args, str) or not isinstance(args, Iterable):
+                                    args=[args]
+                                urls.add(handler.url(*args))
+                                if handler.enable_amp:
+                                    urls.add(handler.amp_url(*args))
+
+        add_patterns(get_resolver().url_patterns)
 
         return urls
 
