@@ -24,6 +24,7 @@ from shark.analytics import GoogleAnalyticsTracking
 from shark.layout import Div
 from shark.layout import Row
 from shark.models import EditableText, StaticPage as StaticPageModel
+from shark.settings import SharkSettings
 from shark.ui_elements import BreadCrumbs
 from .base import Collection, BaseObject, PlaceholderWebObject, Default, ALLOWED_TAGS, ALLOWED_ATTRIBUTES, \
     ALLOWED_STYLES, Markdown
@@ -53,11 +54,11 @@ class BaseHandler:
 
     @classmethod
     def url(cls, *args, **kwargs):
-        return reverse(cls.get_unique_name(), args=args, kwargs=kwargs)
+        return reverse('shark:' + cls.get_unique_name(), args=args, kwargs=kwargs, current_app='shark')
 
     @classmethod
     def amp_url(cls, *args, **kwargs):
-        return reverse(cls.get_unique_name() + '.amp', args=args, kwargs=kwargs)
+        return reverse('shark:' + cls.get_unique_name() + '.amp', args=args, kwargs=kwargs, current_app='shark')
 
     @classmethod
     def sitemap(cls):
@@ -232,15 +233,14 @@ class BasePageHandler(BaseHandler):
 
     def render(self, request, *args, **kwargs):
         self.request = request
-        self.shark_settings = request.shark_settings
         self.user = self.request.user
 
         if request.method == 'GET':
             self.edit_mode = self.user.is_superuser
             start_time = time.clock()
             self.init()
-            if request.shark_settings.google_analytics_code:
-                self.append(GoogleAnalyticsTracking(request.shark_settings.google_analytics_code))
+            if SharkSettings.SHARK_GOOGLE_ANALYTICS_CODE:
+                self.append(GoogleAnalyticsTracking(SharkSettings.SHARK_GOOGLE_ANALYTICS_CODE))
             init_time = time.clock()
             try:
                 self.render_page(*args, **kwargs)
@@ -398,16 +398,14 @@ def listify(obj):
         return obj
 
 
-def shark_django_handler(request, *args, handler=None, settings=None, **kwargs):
+def shark_django_handler(request, *args, handler=None, **kwargs):
     handler_instance = handler()
-    request.shark_settings = settings
     outcome = handler_instance.render(request, *args, **kwargs)
     return outcome
 
 
-def shark_django_amp_handler(request, *args, handler=None, settings=None, **kwargs):
+def shark_django_amp_handler(request, *args, handler=None, **kwargs):
     handler_instance = handler()
-    request.shark_settings = settings
     outcome = handler_instance.render_amp(request, *args, **kwargs)
     return outcome
 
@@ -424,11 +422,11 @@ class StaticPage(BasePageHandler):
 
     @classmethod
     def url(cls, *args, **kwargs):
-        return reverse('shark_static_page', args=args, kwargs=kwargs)
+        return reverse('shark:shark_static_page', args=args, kwargs=kwargs)
 
     @classmethod
     def amp_url(cls, *args, **kwargs):
-        return reverse('shark_static_page.amp', args=args, kwargs=kwargs)
+        return reverse('shark:shark_static_page.amp', args=args, kwargs=kwargs)
 
     @classmethod
     def sitemap(cls):
@@ -498,7 +496,7 @@ class Favicon(BaseHandler):
 
 class GoogleVerification(BaseHandler):
     def render(self, request):
-        return HttpResponse('google-site-verification: {}.html'.format(request.shark_settings.google_verification))
+        return HttpResponse('google-site-verification: {}.html'.format(SharkSettings.SHARK_GOOGLE_VERIFICATION))
 
     @classmethod
     def sitemap(cls):
@@ -509,7 +507,7 @@ class BingVerification(BaseHandler):
     route = '^BingSiteAuth.xml$'
 
     def render(self, request):
-        return HttpResponse('<?xml version="1.0"?><users><user>{}</user></users>'.format(request.shark_settings.bing_verification))
+        return HttpResponse('<?xml version="1.0"?><users><user>{}</user></users>'.format(SharkSettings.SHARK_BING_VERIFICATION))
 
     @classmethod
     def sitemap(cls):
@@ -518,69 +516,8 @@ class BingVerification(BaseHandler):
 
 class YandexVerification(BaseHandler):
     def render(self, request):
-        return HttpResponse('<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body>Verification: {}</body></html>'.format(request.shark_settings.yandex_verification))
+        return HttpResponse('<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body>Verification: {}</body></html>'.format(SharkSettings.SHARK_YANDEX_VERIFICATION))
 
     @classmethod
     def sitemap(cls):
         return False
-
-
-class SharkSettings:
-    def __init__(self):
-        self.modules = []
-        self.page_handler = None
-        self.use_static_pages = True
-        self.static_amp = False
-        self.google_analytics_code = None
-        self.google_verification = None
-        self.bing_verification = None
-        self.yandex_verification = None
-
-    def urls(self):
-        handlers = []
-        def add_handler(obj, route=None):
-            if inspect.isclass(obj) and issubclass(obj, BaseHandler) and 'route' in dir(obj):
-                if route or obj.route:
-                    if obj.enable_amp:
-                        handlers.append(url(obj.make_amp_route(route or obj.route), shark_django_amp_handler, {'handler': obj, 'settings': self}, name=obj.get_unique_name() + '.amp'))
-                    handlers.append(url(route or obj.route, shark_django_handler, {'handler': obj, 'settings': self}, name=obj.get_unique_name()))
-
-        for mod in listify(self.modules):
-            if inspect.ismodule(mod):
-                objs = [getattr(mod, key) for key in dir(mod)]
-            else:
-                objs = mod
-
-            for obj in objs:
-                add_handler(obj)
-
-        add_handler(SiteMap)
-
-        if self.page_handler and self.use_static_pages:
-            StaticPage.enable_amp = self.static_amp
-            if StaticPage.enable_amp:
-                handlers.append(url(
-                        '^page/(.*).amp$',
-                        shark_django_amp_handler,
-                        {'handler': new_class('StaticPage', (StaticPage, self.page_handler)), 'settings': self},
-                        name='shark_static_page.amp'
-                ))
-            handlers.append(url(
-                    '^page/(.*)$',
-                    shark_django_handler,
-                    {'handler': new_class('StaticPage', (StaticPage, self.page_handler)), 'settings': self},
-                    name='shark_static_page'
-            ))
-
-        handlers.append(url(r'^markdown_preview/$', markdown_preview, name='django_markdown_preview'))
-
-        if self.google_verification:
-            add_handler(GoogleVerification, '^{}.html$'.format(self.google_verification))
-
-        if self.bing_verification:
-            add_handler(BingVerification, '^BingSiteAuth.xml$')
-
-        if self.yandex_verification:
-            add_handler(YandexVerification, '^yandex_{}.html$'.format(self.yandex_verification))
-
-        return handlers

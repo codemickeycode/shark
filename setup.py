@@ -21,7 +21,7 @@ setup(
         'static/django_markdown/skins/simple/images/*.*',
         'templates/django_markdown/*.*',
     ]},
-    version = "0.3.11",
+    version = "0.3.12",
     description = "Django based bootstrap web framework",
     author = "Bart Jellema",
     author_email = "b@rtje.net",
@@ -29,7 +29,8 @@ setup(
     install_requires=[
         'Markdown',
         'bleach',
-        'Django'
+        'Django',
+        'django-pluggableappsettings'
     ],
     keywords = ["django", "bootstrap", "framework", "shark", "django_shark"],
     classifiers = [

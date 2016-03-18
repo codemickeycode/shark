@@ -13,7 +13,7 @@ from django.utils.safestring import mark_safe
 def editor_js_initialization(selector):
     ctx = Context(dict(
         selector=selector,
-        extra_settings=simplejson.dumps({'previewParserPath': reverse('django_markdown_preview')})),
+        extra_settings=simplejson.dumps({'previewParserPath': reverse('shark:django_markdown_preview')})),
         autoescape=False)
     return render_to_string('django_markdown/editor_init.html', ctx)
 

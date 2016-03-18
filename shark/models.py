@@ -1,8 +1,12 @@
+import inspect
+
+from django.conf.urls import url
 from django.db.models import *
 from django import forms
 from django.http import Http404
 from django.utils.timezone import now
-
+from django.conf import settings
+from django.conf import urls
 from shark.widgets import MarkdownWidget
 
 
@@ -80,3 +84,4 @@ class Log(SharkModel):
     referrer = CharField(max_length=1024, blank=True)
     user_agent = CharField(max_length=1024, blank=True)
     ip_address = GenericIPAddressField()
+
