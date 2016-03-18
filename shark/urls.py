@@ -19,7 +19,6 @@ def get_urls():
                 if obj.enable_amp:
                     urlpatterns.append(url(obj.make_amp_route(route or obj.route), shark_django_amp_handler, {'handler': obj}, name=obj.get_unique_name() + '.amp'))
                 urlpatterns.append(url(route or obj.route, shark_django_handler, {'handler': obj}, name=obj.get_unique_name()))
-                print(obj.route)
 
     apps = settings.INSTALLED_APPS
     for app_name in apps:
@@ -28,8 +27,6 @@ def get_urls():
         except ImportError:
             pass
         else:
-            print(app)
-
             objs = [getattr(app, key) for key in dir(app)]
 
             for obj in objs:
