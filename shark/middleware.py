@@ -11,8 +11,11 @@ class Logging:
             log.referrer = request.META.get('HTTP_REFERER', '')
             log.user_agent = request.META.get('HTTP_USER_AGENT', '')
             cloudflare_ip = request.META.get('HTTP_TRUE_CLIENT_IP', '')
+            print('Cloudflare', cloudflare_ip)
             heroku_ip = request.META.get('HTTP_X_FORWARDED_FOR', '')
+            print('Heroku', heroku_ip)
             ip_address = request.META.get('REMOTE_ADDR', '')
+            print('IP', ip_address)
             log.ip_address = cloudflare_ip or heroku_ip or ip_address
             # CF-IPCountry
             request.shark_log = log
