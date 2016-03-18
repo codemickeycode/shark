@@ -1,17 +1,15 @@
 import inspect
+import logging
 
 import time
-from types import new_class
 
 import bleach
 import markdown
 from collections import Iterable
-from django.conf.urls import url
 import json
 
-from django.core import urlresolvers
 from django.core.urlresolvers import reverse, get_resolver, RegexURLResolver, RegexURLPattern, NoReverseMatch
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.shortcuts import render
 from django.test import Client
 from django.test import TestCase
@@ -21,6 +19,7 @@ from django.views.static import serve
 
 from shark import models
 from shark.analytics import GoogleAnalyticsTracking
+from shark.common import listify
 from shark.layout import Div
 from shark.layout import Row
 from shark.models import EditableText, StaticPage as StaticPageModel
@@ -35,6 +34,7 @@ unique_name_counter = 0
 class BaseHandler:
     enable_amp = False
     route = None
+    redirects = None
 
     def __init__(self, *args, **kwargs):
         pass
@@ -355,7 +355,7 @@ class HandlerTestCase(TestCase):
     url = None
     def test_response_is_200(self):
         if self.__class__.url:
-            print('URL', self.__class__.url)
+            logging.info('URL', self.__class__.url)
             client = Client()
             response = client.get(self.__class__.url)
 
@@ -391,17 +391,22 @@ class BaseContainerPageHandler(BasePageHandler):
         self.base_object = self.container
 
 
-def listify(obj):
-    if not isinstance(obj, (list, set)):
-        return [obj]
-    else:
-        return obj
-
-
 def shark_django_handler(request, *args, handler=None, **kwargs):
     handler_instance = handler()
     outcome = handler_instance.render(request, *args, **kwargs)
     return outcome
+
+
+def shark_django_redirect_handler(request, *args, handler=None, function=None, **kwargs):
+    if function:
+        if isinstance(function, str):
+            url = handler().__getattribute__(function)(*args, **kwargs)
+        else:
+            url = handler.url(*listify(function(*args, **kwargs)))
+    else:
+        url = handler.url(*args, **kwargs)
+
+    return HttpResponsePermanentRedirect(url)
 
 
 def shark_django_amp_handler(request, *args, handler=None, **kwargs):
@@ -446,6 +451,21 @@ def markdown_preview(request):
     dirty = markdown.markdown(text=escape(request.POST.get('data', 'No content posted')), output_format='html5')
     value = bleach.clean(dirty, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES, styles=ALLOWED_STYLES)
     return HttpResponse(value)
+
+
+class Robots(BaseHandler):
+    route = '^robots.txt$'
+
+    def render(self, request):
+        return HttpResponse(
+            "User-agent: *\r\n" +
+            "Disallow: /admin/*\r\n" +
+            "Disallow: /__debug__/*"
+        )
+
+    @classmethod
+    def sitemap(cls):
+        return False
 
 
 class SiteMap(BaseHandler):
@@ -498,6 +518,7 @@ class Favicon(BaseHandler):
     def render(self, request):
         return serve(request, 'favicon.ico', 'static/icons')
 
+
 class GoogleVerification(BaseHandler):
     def render(self, request):
         return HttpResponse('google-site-verification: {}.html'.format(SharkSettings.SHARK_GOOGLE_VERIFICATION))
@@ -508,8 +529,6 @@ class GoogleVerification(BaseHandler):
 
 
 class BingVerification(BaseHandler):
-    route = '^BingSiteAuth.xml$'
-
     def render(self, request):
         return HttpResponse('<?xml version="1.0"?><users><user>{}</user></users>'.format(SharkSettings.SHARK_BING_VERIFICATION))
 

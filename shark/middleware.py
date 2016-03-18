@@ -30,13 +30,12 @@ class Logging:
                         logging.warning('SharkSettings.proxy_hops is {}, but no hops detected. This is a security issues as this allows for IP spoofing.'.format(SharkSettings.PROXY_HOPS))
                     real_ip = request.META.get('REMOTE_ADDR', '')
 
-            print('IP', real_ip)
             log.ip_address = real_ip
             # CF-IPCountry
             request.shark_log = log
         except Exception:
-            print('Exception in Shark logging middleware - process request')
-            traceback.print_exc()
+            logging.error('Exception in Shark logging middleware - process request')
+            logging.error(traceback.format_exc())
         return None
 
     def process_response(self, request, response):
@@ -44,7 +43,7 @@ class Logging:
             log = request.shark_log
             log.save()
         except Exception:
-            print('Exception in Shark logging middleware - process request')
-            traceback.print_exc()
+            logging.error('Exception in Shark logging middleware - process response')
+            logging.error(traceback.format_exc())
 
         return response

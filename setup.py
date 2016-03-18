@@ -21,11 +21,12 @@ setup(
         'static/django_markdown/skins/simple/images/*.*',
         'templates/django_markdown/*.*',
     ]},
-    version = "0.3.14",
+    version = "0.3.16",
     description = "Django based bootstrap web framework",
     author = "Bart Jellema",
     author_email = "b@rtje.net",
     url = "http://getshark.org/",
+    download_url="https://github.com/Bart-Jellema/shark",
     install_requires=[
         'Markdown',
         'bleach',
