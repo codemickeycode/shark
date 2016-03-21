@@ -213,10 +213,15 @@ class Video(BaseObject):
         self.auto_play = self.param(auto_play, 'boolean', 'Start the video automatically on load?')
 
     def get_html(self, html):
-        html.append("<video" + self.base_attributes + " width='100%' controls{}>".format(iif(self.auto_play, ' autoplay')))
-        for link in self.urls:
-            html.append(u"    <source src='" + link + u"'>")
-        html.append("</video>")
+        if len(self.urls)==1 and self.urls[0].startswith('https://vimeo.com/'):
+            video_id_match = re.match('https://vimeo.com/([0-9]*)', self.urls[0])
+            if video_id_match:
+                html.append('<iframe src="https://player.vimeo.com/video/{}" width="500" height="281" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>'.format(video_id_match.group(1)))
+        else:
+            html.append("<video" + self.base_attributes + " width='100%' controls{}>".format(iif(self.auto_play, ' autoplay')))
+            for link in self.urls:
+                html.append(u"    <source src='" + link + u"'>")
+            html.append("</video>")
 
     def set_source(self, src):
         return "$('#{} source').attr('src', '{}');$('#{}')[0].load();".format(self.id, src, self.id)
