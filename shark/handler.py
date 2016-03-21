@@ -245,7 +245,7 @@ class BasePageHandler(BaseHandler):
             try:
                 self.render_page(*args, **kwargs)
             except NotFound404:
-                output = Http404()
+                raise Http404()
             else:
                 render_time = time.clock()
                 output = self.output_html(start_time, init_time, render_time, args, kwargs)
@@ -292,7 +292,7 @@ class BasePageHandler(BaseHandler):
             try:
                 self.render_amp_page(*args, **kwargs)
             except NotFound404:
-                output = Http404()
+                raise Http404()
             else:
                 output = self.output_amp_html(args, kwargs)
             return output

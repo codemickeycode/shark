@@ -8,7 +8,7 @@ from django.conf import settings
 
 from shark.common import listify
 from shark.handler import markdown_preview, BaseHandler, shark_django_handler, shark_django_amp_handler, StaticPage, \
-    SiteMap, GoogleVerification, BingVerification, YandexVerification, shark_django_redirect_handler
+    SiteMap, GoogleVerification, BingVerification, YandexVerification, shark_django_redirect_handler, Favicon
 from shark.settings import SharkSettings
 
 
@@ -64,6 +64,9 @@ def get_urls():
                 {'handler': new_class('StaticPage', (StaticPage, obj))},
                 name='shark_static_page'
         ))
+
+    add_handler(SiteMap)
+    add_handler(Favicon)
 
     urlpatterns.append(url(r'^markdown_preview/$', markdown_preview, name='django_markdown_preview'))
 
