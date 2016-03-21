@@ -1,3 +1,5 @@
+import re
+
 from shark.text import Anchor
 from .layout import Panel, multiple_div_row
 from .base import BaseObject, Collection, Default, Enumeration, iif, Raw
