@@ -68,7 +68,7 @@ class Heading(BaseObject):
         html.append('<h' + str(self.level) + self.base_attributes + u'>')
         html.inline_render(self.text)
         if self.subtext:
-            html.append('<small>')
+            html.append(' <small>')
             html.inline_render(self.subtext)
             html.append('</small>')
         html.append('</h' + str(self.level) + '>')
