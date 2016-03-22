@@ -400,9 +400,9 @@ def shark_django_handler(request, *args, handler=None, **kwargs):
 def shark_django_redirect_handler(request, *args, handler=None, function=None, **kwargs):
     if function:
         if isinstance(function, str):
-            url = handler().__getattribute__(function)(*args, **kwargs)
+            url = handler().__getattribute__(function)(request, *args, **kwargs)
         else:
-            url = handler.url(*listify(function(*args, **kwargs)))
+            url = handler.url(*listify(function(request, *args, **kwargs)))
     else:
         url = handler.url(*args, **kwargs)
 
