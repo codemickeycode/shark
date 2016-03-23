@@ -177,7 +177,7 @@ class BaseObject(object):
 
     def render_js(self, indent=''):
         js = []
-        js.extend(self.get_js().split('\r\n'))
+        js.extend((self.get_js() or '').split('\r\n'))
         for web_object in self.children:
             if not isinstance(web_object, str):
                 js.append(web_object.render_js(indent))
