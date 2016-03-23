@@ -222,7 +222,7 @@ class Video(BaseObject):
             if video_id_match:
                 html.append('<div' + self.base_attributes + '><iframe src="https://player.vimeo.com/video/{}" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></div>'.format(video_id_match.group(1)))
         elif len(self.urls)==1 and self.urls[0].startswith('https://www.youtube.com/'):
-            video_id_match = re.match('https://www\.youtube\.com/watch\?v=([0-9a-zA-Z]*)', self.urls[0])
+            video_id_match = re.match('https://www\.youtube\.com/watch\?v=([-0-9a-zA-Z]*)', self.urls[0])
             if video_id_match:
                 html.append('<div' + self.base_attributes + '><iframe src="https://www.youtube.com/embed/{}" frameborder="0" allowfullscreen></iframe></div>'.format(video_id_match.group(1)))
         else:
