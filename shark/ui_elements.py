@@ -209,21 +209,33 @@ class Video(BaseObject):
     """
     Embed a video with the HTML video tag
     """
-    def __init__(self, urls=Default, auto_play=False, **kwargs):
+    def __init__(self, urls=Default, auto_play=False, aspect_ratio=0.5625, **kwargs):
         self.init(kwargs)
         self.urls = self.param(urls, 'list', 'List of urls of different versions of the video', [])
         self.auto_play = self.param(auto_play, 'boolean', 'Start the video automatically on load?')
+        self.aspect_ratio = self.param(aspect_ratio, 'float', 'Aspect of video, used for iframed videos in fluid layouts')
 
     def get_html(self, html):
+        self.id_needed = True
         if len(self.urls)==1 and self.urls[0].startswith('https://vimeo.com/'):
             video_id_match = re.match('https://vimeo.com/([0-9]*)', self.urls[0])
             if video_id_match:
-                html.append('<iframe src="https://player.vimeo.com/video/{}" width="500" height="281" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>'.format(video_id_match.group(1)))
+                html.append('<div' + self.base_attributes + '><iframe src="https://player.vimeo.com/video/{}" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></div>'.format(video_id_match.group(1)))
+        elif len(self.urls)==1 and self.urls[0].startswith('https://www.youtube.com/'):
+            video_id_match = re.match('https://www\.youtube\.com/watch\?v=([0-9a-zA-Z]*)', self.urls[0])
+            if video_id_match:
+                html.append('<div' + self.base_attributes + '><iframe src="https://www.youtube.com/embed/{}" frameborder="0" allowfullscreen></iframe></div>'.format(video_id_match.group(1)))
         else:
             html.append("<video" + self.base_attributes + " width='100%' controls{}>".format(iif(self.auto_play, ' autoplay')))
             for link in self.urls:
                 html.append(u"    <source src='" + link + u"'>")
             html.append("</video>")
+
+    def get_js(self):
+        if len(self.urls) == 1 and (self.urls[0].startswith('https://vimeo.com/') or self.urls[0].startswith('https://www.youtube.com/')):
+            div = "$('#" + self.id + "')"
+            iframe = "$('#" + self.id + " iframe')"
+            return "$(window).resize(function(){" + iframe + ".width(" + div + ".width());" + iframe + ".height(" + iframe + ".width()*" + str(self.aspect_ratio) + ");}).resize();"
 
     def set_source(self, src):
         return "$('#{} source').attr('src', '{}');$('#{}')[0].load();".format(self.id, src, self.id)
