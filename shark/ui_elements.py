@@ -1,5 +1,8 @@
 import re
 
+from django.utils.http import urlencode
+
+from shark.settings import SharkSettings
 from shark.text import Anchor
 from .layout import Panel, multiple_div_row
 from .base import BaseObject, Collection, Default, Enumeration, iif, Raw
@@ -243,6 +246,17 @@ class Video(BaseObject):
     @classmethod
     def example(cls):
         return Video(urls='http://www.sample-videos.com/video/mp4/240/big_buck_bunny_240p_1mb.mp4')
+
+
+class GoogleMaps(BaseObject):
+    def __init__(self, location='', width='100%', height='250px', **kwargs):
+        self.init(kwargs)
+        self.location = self.param(location, 'string', 'Location name or "long, lat"')
+        self.width = self.param(width, 'css', 'Width of the map in px or %')
+        self.height = self.param(height, 'css', 'Height of the map in px or %')
+
+    def get_html(self, html):
+        html.append('<iframe' + self.base_attributes + ' width="{}" height="{}" frameborder="0" style="border:0" src="https://www.google.com/maps/embed/v1/place?key={}&{}" allowfullscreen></iframe>'.format(self.width, self.height, SharkSettings.SHARK_GOOGLE_BROWSER_API_KEY, urlencode({'q': self.location})))
 
 
 class SearchBox(BaseObject):
