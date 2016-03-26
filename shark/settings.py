@@ -12,3 +12,5 @@ class SharkSettings(AppSettings):
     SHARK_BING_VERIFICATION = StringSetting(None)
     SHARK_YANDEX_VERIFICATION = StringSetting(None)
     SHARK_GOOGLE_BROWSER_API_KEY = StringSetting(None)
+    SHARK_FACEBOOK_APP_ID = StringSetting(None)
+    SHARK_FACEBOOK_SECRET = StringSetting(None)
