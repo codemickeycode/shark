@@ -280,3 +280,20 @@ class SearchBox(BaseObject):
         html.append('</form>')
 
 
+class Parallax(BaseObject):
+    def __init__(self, background_url='', items=Default, speed=3, **kwargs):
+        self.init(kwargs)
+        self.background_url = self.param(background_url, 'url', 'URL to the background image')
+        self.items = self.param(items, 'Collection', 'The items in the section', Collection())
+        self.speed = self.param(speed, 'float', 'The speed of the parallax, higher numbers is slower. 1 is normal page speed, 2 is half speed, etc.')
+        self.style += 'background: url({}) 50% 0/100% fixed; height: auto; margin: 0 auto; width: 100%; position: relative;'.format(self.background_url)
+        self.id_needed = True
+
+    def get_html(self, html):
+        html.append('<section' + self.base_attributes + '>')
+        html.render('    ', self.items)
+        html.append('</section>')
+
+    def get_js(self):
+        return "var scroll = $('#" + self.id + "'); $(window).scroll(function() {scroll.css({ backgroundPosition: '50% ' + (-($(window).scrollTop() / " + str(self.speed) + ")) + 'px' })});"
+

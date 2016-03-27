@@ -73,9 +73,9 @@ class NavBar(BaseObject):
 
     def render_css(self, indent=''):
         if self.position == NavBarPosition.fixed_top:
-            return 'body { margin-top: 80px; }'
+            return 'body { margin-top: 60px; }'
         elif self.position == NavBarPosition.fixed_bottom:
-            return 'body { margin-bottom: 80px; }'
+            return 'body { margin-bottom: 60px; }'
 
     @classmethod
     def example(self):

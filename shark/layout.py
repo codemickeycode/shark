@@ -228,7 +228,7 @@ class Spacer(BaseObject):
         self.pixels = self.param(pixels, 'int', 'Vertical spacing in pixels')
 
     def get_html(self, html):
-        html.append('<div class="col-xs-12" style="height:{}px;"></div>'.format(self.pixels))
+        html.append('<div style="height:{}px;"></div>'.format(self.pixels))
 
     @classmethod
     def example(self):
