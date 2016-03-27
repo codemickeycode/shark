@@ -163,7 +163,7 @@ class NavDropDown(BaseObject):
         self.items = self.param(items, 'Collection', 'Items in the dropdown menu', Collection())
 
     def get_html(self, html):
-        html.append('<li' + self.base_attributes + '" class="dropdown">')
+        html.append('<li' + self.base_attributes + ' class="dropdown">')
         html.append('    <a href="#" class="dropdown-toggle" data-toggle="dropdown">' + self.name + ' <b class="caret"></b></a>')
         html.append('    <ul class="dropdown-menu">')
         html.render('        ', self.items)
