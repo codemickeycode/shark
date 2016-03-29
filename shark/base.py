@@ -7,7 +7,7 @@ from collections import Iterable
 from django.utils.html import escape
 from django.utils.timezone import now
 
-from shark.models import EditableText
+from shark.resources import Resource, Resources
 from .common import safe_url, iif
 
 Default = object()
@@ -166,7 +166,7 @@ class BaseObject(object):
             self.extra_attributes = (self.extra_attributes + ' ' + attribute + '="' + str(value) + '"')
 
     def render(self, handler=None, indent=0):
-        html = ObjectHTML(handler=handler, indent=indent)
+        html = Renderer(handler=handler, indent=indent)
         try:
             self.get_html(html)
         except AttributeError as e:
@@ -175,26 +175,8 @@ class BaseObject(object):
 
         return html.output()
 
-    def render_js(self, indent=''):
-        js = []
-        js.extend((self.get_js() or '').split('\r\n'))
-        for web_object in self.children:
-            if not isinstance(web_object, str):
-                js.append(web_object.render_js(indent))
-
-        return (u'\r\n' + indent).join([text for text in js if text])
-
-    def render_css(self, indent=''):
-        css = []
-        css.append(self.get_css())
-        for web_object in self.children:
-            if not isinstance(web_object, str):
-                css.append(web_object.render_css(indent))
-
-        return (u'\r\n' + indent).join([text for text in css if text])
-
     def render_amp(self, handler=None):
-        html = ObjectHTML(handler=handler, amp=True)
+        html = Renderer(handler=handler, amp=True)
         try:
             self.get_amp_html(html)
         except AttributeError as e:
@@ -206,25 +188,8 @@ class BaseObject(object):
     def get_html(self, html):
         pass
 
-    def get_js(self):
-        return ''
-
-    def get_css(self):
-        return ''
-
     def get_amp_html(self, html):
         pass
-
-    def extra_files(self):
-        files = self.get_extra_files()
-        for web_object in self.children:
-            if isinstance(web_object, (BaseObject, Collection)):
-                files.extend(web_object.extra_files())
-
-        return files
-
-    def get_extra_files(self):
-        return []
 
     def serialize(self):
         return {'class_name': self.__class__.__name__, 'id': self.id}
@@ -253,49 +218,68 @@ class PlaceholderWebObject(object):
     def replace_with(self, new_object):
         new_object.id = self.id
         html = new_object.render('')
-        javascript = new_object.render_js('')
 
         self.handler.data[self.id] = html
         #TODO: Use proper JQuery
         self.handler.add_javascript('$("#' + self.id + '")[0].outerHTML = data.data.' + self.id + ';')
-        self.handler.add_javascript(javascript)
+        # self.handler.add_javascript(javascript)
 
     def refresh(self):
         self.handler.add_javascript(globals()[self.class_name](id=self.id).refresh())
 
 
 
-class ObjectHTML(list):
-    def __init__(self, *args, handler=None, indent=0, amp=False, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.indent = indent
+class Renderer:
+    def __init__(self, handler=None, amp=False, inline_style_class_base='style_'):
+        self._html = []
+        self._css = []
+        self._css_classes = {}
+        self._js = []
+        self.indent = 0
         self.handler = handler
-        self.edit_mode = handler.edit_mode
-        self.text = handler.text
+        self.translate_inline_styles_to_classes = True
+        self.inline_style_class_base = inline_style_class_base
+        self.resources = Resources()
+
+        if handler:
+            self.edit_mode = handler.edit_mode
+            self.text = handler.text
+        else:
+            self.edit_mode = False
+            self.text = ''
         self.separator = '\n\r'
         self.omit_next_indent = False
         self.amp = amp
-        self.css_blocks = {}
 
-    def add_style_class(self, style):
-        if not style in self.css_blocks:
-            self.css_blocks[style] = 'custom_{}'.format(len(self.css_blocks))
-        return self.css_blocks[style]
+    def add_css_class(self, css):
+        if not css in self._css_classes:
+            self._css_classes[css] = '{}{}'.format(self.inline_style_class_base, len(self._css_classes))
+        return self._css_classes[css]
 
     def append(self, p_object):
         if isinstance(p_object, str):
-            super().append((' '*self.indent if not self.omit_next_indent else '') + p_object + self.separator)
+            self._html.append((' '*self.indent if not self.omit_next_indent else '') + p_object + self.separator)
             self.omit_next_indent = False
 
-    def render(self, indent='', web_object=None):
+    def append_css(self, css):
+        self._css.append(css.strip())
+
+    def append_js(self, js):
+        js = js.strip()
+        if not js.endswith(';'):
+            js += ';'
+        self._js.append(js)
+
+    def render(self, indent, web_object):
         if web_object:
             if isinstance(web_object, str):
                 web_object = Text(web_object)
             if not isinstance(web_object, BaseObject) and not isinstance(web_object, Collection):
                 web_object = Collection(web_object)
             if web_object.style:
-                web_object.add_class(self.add_style_class(web_object.style))
-                web_object.style = ''
+                if self.translate_inline_styles_to_classes:
+                    web_object.add_class(self.add_css_class(web_object.style))
+                    web_object.style = ''
             if not self.amp:
                 self.indent += len(indent)
                 web_object.get_html(self)
@@ -304,8 +288,8 @@ class ObjectHTML(list):
                 web_object.get_amp_html(self)
 
     def inline_render(self, web_object):
-        if len(self) and self[-1].endswith('\n\r'):
-            self[-1] = self[-1][:-2]
+        if self.separator and len(self._html) and self._html[-1].endswith(self.separator):
+            self._html[-1] = self._html[-1][:-len(self.separator)]
         if web_object:
             if not isinstance(web_object, BaseObject) and not isinstance(web_object, Collection):
                 web_object = Collection(web_object)
@@ -324,10 +308,33 @@ class ObjectHTML(list):
 
         self.omit_next_indent = True
 
-    def output(self):
-        html = ''.join(self)
-        css = '\r\n'.join(['.' + class_name + '{' + style + '}' for style, class_name in self.css_blocks.items()])
-        return (html, css)
+    def add_resource(self, url, type, module, name=''):
+        self.resources.add_resource(url, type, module, name)
+
+    @property
+    def html(self):
+        return ''.join(self._html)
+
+    @property
+    def css(self):
+        css = self._css
+        for style, class_name in self._css_classes.items():
+            css.append('.' + class_name + '{' + style + '}')
+
+        return '\r\n'.join(css)
+
+    @property
+    def js(self):
+        return '\r\n'.join(self._js)
+
+    @property
+    def css_files(self):
+        return [resource.url for resource in self.resources.resources if resource.type=='css']
+
+    @property
+    def js_files(self):
+        return [resource.url for resource in self.resources.resources if resource.type=='js']
+
 
 class Collection(list):
     def __init__(self, *args, **kwargs):
@@ -349,11 +356,12 @@ class Collection(list):
 
     def append(self, *objects):
         for obj in objects:
-            if isinstance(obj, str):
-                obj = Text(obj)
+            if obj:
+                if isinstance(obj, str):
+                    obj = Text(obj)
 
-            super(Collection, self).append(obj)
-            obj.parent = self
+                super(Collection, self).append(obj)
+                obj.parent = self
 
     def get_html(self, html):
         for web_object in self:
@@ -361,7 +369,7 @@ class Collection(list):
                 if isinstance(web_object, BaseObject) or isinstance(web_object, Collection):
                     try:
                         if web_object.style:
-                            web_object.add_class(html.add_style_class(web_object.style))
+                            web_object.add_class(html.add_css_class(web_object.style))
                             web_object.style = ''
                         web_object.get_html(html)
                     except Exception as e:
@@ -385,46 +393,17 @@ class Collection(list):
                 else:
                     raise TypeError("AMP You're trying to render something that's not a Shark Object. Received {} of class {}.".format(web_object, web_object.__class__.__name__))
 
-    def render(self, handler=None, indent=0):
-        html = ObjectHTML(handler=handler, indent=indent)
-        self.get_html(html)
+    def render(self, handler=None):
+        renderer = Renderer(handler=handler)
+        self.get_html(renderer)
 
-        return html.output()
+        return renderer
 
     def render_amp(self, handler=None):
-        html = ObjectHTML(handler=handler, amp=True)
-        self.get_amp_html(html)
+        renderer = Renderer(handler=handler, amp=True)
+        self.get_amp_html(renderer)
 
-        return html.output()
-
-    def render_js(self, indent=''):
-        js = []
-        for web_object in self:
-            if not isinstance(web_object, str) and web_object is not None:
-                try:
-                    js.append(web_object.render_js(indent))
-                except AttributeError as e:
-                    print("Object:", web_object)
-                    print("Parent:", self)
-                    raise e
-
-        return (u'\r\n' + indent).join([text for text in js if text])
-
-    def render_css(self, indent=''):
-        css = []
-        for web_object in self:
-            if not isinstance(web_object, str) and web_object is not None:
-                css.append(web_object.render_css(indent))
-
-        return (u'\r\n' + indent).join([text for text in css if text])
-
-    def extra_files(self):
-        files = []
-        for web_object in self:
-            if isinstance(web_object, (BaseObject, Collection)):
-                files.extend(web_object.extra_files())
-
-        return files
+        return renderer
 
     def find_id(self, id):
         for item in self:

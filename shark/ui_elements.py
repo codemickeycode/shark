@@ -234,11 +234,10 @@ class Video(BaseObject):
                 html.append(u"    <source src='" + link + u"'>")
             html.append("</video>")
 
-    def get_js(self):
         if len(self.urls) == 1 and (self.urls[0].startswith('https://vimeo.com/') or self.urls[0].startswith('https://www.youtube.com/')):
             div = "$('#" + self.id + "')"
             iframe = "$('#" + self.id + " iframe')"
-            return "$(window).resize(function(){" + iframe + ".width(" + div + ".width());" + iframe + ".height(" + iframe + ".width()*" + str(self.aspect_ratio) + ");}).resize();"
+            html.append_js("$(window).resize(function(){" + iframe + ".width(" + div + ".width());" + iframe + ".height(" + iframe + ".width()*" + str(self.aspect_ratio) + ");}).resize();")
 
     def set_source(self, src):
         return "$('#{} source').attr('src', '{}');$('#{}')[0].load();".format(self.id, src, self.id)
@@ -294,6 +293,5 @@ class Parallax(BaseObject):
         html.render('    ', self.items)
         html.append('</section>')
 
-    def get_js(self):
-        return "var scroll = $('#" + self.id + "'); $(window).scroll(function() {scroll.css({ backgroundPosition: '50% ' + (-($(window).scrollTop() / " + str(self.speed) + ")) + 'px' })});"
+        html.append_js("var scroll = $('#" + self.id + "'); $(window).scroll(function() {scroll.css({ backgroundPosition: '50% ' + (-($(window).scrollTop() / " + str(self.speed) + ")) + 'px' })});")
 

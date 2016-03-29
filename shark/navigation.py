@@ -44,6 +44,11 @@ class NavBar(BaseObject):
         html.append(u'    </div>')
         html.append(u'</nav>')
 
+        if self.position == NavBarPosition.fixed_top:
+            html.append_css('body { margin-top: 60px; }')
+        elif self.position == NavBarPosition.fixed_bottom:
+            html.append_css('body { margin-bottom: 60px; }')
+
     def get_amp_html(self, html):
         html.append(u'<nav' + self.base_attributes + u' class="navbar navbar-default navbar-{}">'.format(NavBarPosition.name(self.position).replace('_', '-')))
         html.append(u'    <div class="container-fluid">')
@@ -71,11 +76,10 @@ class NavBar(BaseObject):
         html.append(u'    </div>')
         html.append(u'</nav>')
 
-    def render_css(self, indent=''):
         if self.position == NavBarPosition.fixed_top:
-            return 'body { margin-top: 60px; }'
+            html.append_css('body { margin-top: 60px; }')
         elif self.position == NavBarPosition.fixed_bottom:
-            return 'body { margin-bottom: 60px; }'
+            html.append_css('body { margin-bottom: 60px; }')
 
     @classmethod
     def example(self):

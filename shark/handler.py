@@ -26,7 +26,7 @@ from shark.models import EditableText, StaticPage as StaticPageModel
 from shark.settings import SharkSettings
 from shark.ui_elements import BreadCrumbs
 from .base import Collection, BaseObject, PlaceholderWebObject, Default, ALLOWED_TAGS, ALLOWED_ATTRIBUTES, \
-    ALLOWED_STYLES, Markdown
+    ALLOWED_STYLES, Markdown, Renderer
 from .resources import Resources
 
 unique_name_counter = 0
@@ -107,11 +107,6 @@ class BasePageHandler(BaseHandler):
         self.robots_index = True
         self.robots_follow = True
 
-        self.extra_css_files = []
-        self.extra_js_files = []
-
-        self.javascript = ''
-        self.css = ''
         self.items = Collection()
         self.base_object = self.items
         self.modals = Collection()
@@ -127,19 +122,15 @@ class BasePageHandler(BaseHandler):
     def init(self):
         pass
 
-    def output_html(self, start_time, init_time, render_time, args, kwargs):
+    def output_html(self, args, kwargs):
         content = Collection()
-        if self.nav:
-            content.append(self.nav)
-        if self.main:
-            content.append(self.main)
+        content.append(self.modals)
+        content.append(self.nav)
+        content.append(self.main)
         if self.crumbs:
             self.base_object.insert(0, Row(Div(BreadCrumbs(*self.crumbs), classes='col-md-12')))
-
         content.append(self.items)
-
-        if self.footer:
-            content.append(self.footer)
+        content.append(self.footer)
 
         keep_variables = {}
         for variable_name in dir(self):
@@ -148,52 +139,21 @@ class BasePageHandler(BaseHandler):
                 if isinstance(variable, BaseObject):
                     keep_variables[variable_name] = variable.serialize()
 
-        javascript = self.javascript
-        css = self.css
-        if self.modals:
-            modals_html = self.modals.render(self, 8)
-            javascript += '        ' + self.modals.render_js('        ')
-            css += '            ' + self.modals.render_css('            ')
-        else:
-            modals_html = ''
-
-        if content:
-            content_html, content_css = content.render(self, 8)
-            javascript += content.render_js('            ')
-            css += '            ' + content.render_css('            ')
-            css += ''.join(['\r\n            ' + line for line in content_css.splitlines()])
-        else:
-            content_html = ''
-
-        if not javascript.strip():
-            javascript = ''
-
-        if not css.strip():
-            css = ''
-
-        # #TODO: Use the tornado mechanism for this?
-        for resource in Resources.resources:
-            if resource.type == 'css' and not resource.url in self.extra_css_files:
-                self.extra_css_files.append(resource.url)
-            elif resource.type == 'js' and not resource.url in self.extra_js_files:
-                self.extra_js_files.append(resource.url)
-
-        output_time = time.clock()
-        content_html = content_html + '<!-- Init: {} Render: {} Output: {} -->'.format(init_time-start_time, render_time-init_time, output_time-render_time)
+        renderer = Renderer(self)
+        renderer.render('        ', content)
 
         html = render(self.request, 'base.html', {
-                                  'title':self.title,
-                                  'description':self.description.replace('"', '\''),
-                                  'keywords':self.keywords,
-                                  'author':self.author,
-                                  'modals':modals_html,
-                                  'content':content_html,
-                                  'extra_css':'\n\r'.join(['        <link rel="stylesheet" href="' + css_file + '"/>' for css_file in self.extra_css_files]),
-                                  'extra_js':'\n\r'.join(['        <script src="' + js_file + '"></script>' for js_file in self.extra_js_files]),
-                                  'javascript':javascript,
-                                  'css':css,
-                                  'keep_variables':keep_variables,
-                                  'amp_url':self.request.build_absolute_uri(self.amp_url(*args, **kwargs)) if self.enable_amp else None
+                                  'title': self.title,
+                                  'description': self.description.replace('"', '\''),
+                                  'keywords': self.keywords,
+                                  'author': self.author,
+                                  'content': renderer.html,
+                                  'extra_css': '\n\r'.join(['        <link rel="stylesheet" href="' + css_file + '"/>' for css_file in renderer.css_files]),
+                                  'extra_js': '\n\r'.join(['        <script src="' + js_file + '"></script>' for js_file in renderer.js_files]),
+                                  'javascript': renderer.js,
+                                  'css': renderer.css,
+                                  'keep_variables': keep_variables,
+                                  'amp_url': self.request.build_absolute_uri(self.amp_url(*args, **kwargs)) if self.enable_amp else None
         })
 
         return html
@@ -237,18 +197,15 @@ class BasePageHandler(BaseHandler):
 
         if request.method == 'GET':
             self.edit_mode = self.user.is_superuser
-            start_time = time.clock()
             self.init()
             if SharkSettings.SHARK_GOOGLE_ANALYTICS_CODE:
                 self.append(GoogleAnalyticsTracking(SharkSettings.SHARK_GOOGLE_ANALYTICS_CODE))
-            init_time = time.clock()
             try:
                 self.render_page(*args, **kwargs)
             except NotFound404:
                 raise Http404()
             else:
-                render_time = time.clock()
-                output = self.output_html(start_time, init_time, render_time, args, kwargs)
+                output = self.output_html(args, kwargs)
             return output
         elif request.method == 'POST':
             action = self.request.POST.get('action', '')
@@ -275,7 +232,6 @@ class BasePageHandler(BaseHandler):
                 self.__getattribute__(action)(*args, **arguments)
 
             self.html += self.items.render('')
-            self.javascript += self.items.render_js('')
             data = {'javascript': self.javascript,
                     'html': self.html,
                     'data': self.data}

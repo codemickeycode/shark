@@ -1,4 +1,4 @@
-from .handler import BaseObject, Default, Resources
+from .base import BaseObject, Default
 
 
 class Graph(BaseObject):
@@ -14,10 +14,11 @@ class Graph(BaseObject):
         self.height = self.param(height, 'css_attr', 'Graph height')
         self.id_needed = True
 
-    def get_html(self, html):
-        html.append(u'<div id="' + self.id + '" style="height:' + self.height + ';width:' + self.width + ';"></div>')
+    def get_html(self, renderer):
+        renderer.add_resource('//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js', 'js', 'morris', 'raphael')
+        renderer.add_resource('//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js', 'js', 'morris', 'main')
+        renderer.add_resource('//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css', 'css', 'morris', 'main')
 
-    def get_js(self):
         data_points = []
         series_names = set()
         for row in self.data:
@@ -32,7 +33,8 @@ class Graph(BaseObject):
 
             data_points.append('{x:"' + str(x_value) + '"' + values + '}')
 
-        return """
+        renderer.append(u'<div id="' + self.id + '" style="height:' + self.height + ';width:' + self.width + ';"></div>')
+        renderer.append_js("""
                 Morris.Line({
                     element: '""" + self.id + """',
                     data: [""" + ','.join(data_points) + """],
@@ -46,7 +48,7 @@ class Graph(BaseObject):
                     axes: true,
                     grid: true
                     });
-            """
+            """)
 
     @classmethod
     def example(self):
@@ -58,8 +60,3 @@ class Graph(BaseObject):
             {'year': 2015, 'wheat': 14.0, 'corn': 12.3}
         ]
         return Graph(data, 'year', ['wheat', 'corn'])
-
-#TODO: Make dynamic
-Resources.add_resource('//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js', 'js', 'morris', 'raphael')
-Resources.add_resource('//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js', 'js', 'morris', 'main')
-Resources.add_resource('//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css', 'css', 'morris', 'main')

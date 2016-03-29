@@ -7,7 +7,7 @@ class UnorderedList(BaseObject):
         self.items = self.param(items, 'Collection', 'List items in <ul>', Collection())
 
     def get_html(self, html):
-        html.append(u'<ul ' + self.base_attributes + '>')
+        html.append(u'<ul' + self.base_attributes + '>')
         html.render(u'    ', self.items)
         html.append(u'</ul>')
 
@@ -19,7 +19,7 @@ class HorizontalList(BaseObject):
         self.classes += ' horizontal-list'
 
     def get_html(self, html):
-        html.append(u'<ul ' + self.base_attributes + '>')
+        html.append(u'<ul' + self.base_attributes + '>')
         html.render(u'    ', self.items)
         html.append(u'</ul>')
 
@@ -30,7 +30,7 @@ class OrderedList(BaseObject):
         self.items = self.param(items, 'Collection', 'List items in <ol>', Collection())
 
     def get_html(self, html):
-        html.append(u'<ol ' + self.base_attributes + '>')
+        html.append(u'<ol' + self.base_attributes + '>')
         html.render(u'    ', self.items)
         html.append(u'</ol>')
 
@@ -42,7 +42,7 @@ class DefinitionTerm(BaseObject):
 
     def get_html(self, html):
         if self.items:
-            html.append(u'<dt ' + self.base_attributes + '>')
+            html.append(u'<dt' + self.base_attributes + '>')
             html.render(u'    ', self.items)
             html.append(u'</dt>')
 
@@ -54,7 +54,7 @@ class DescriptionTerm(BaseObject):
 
     def get_html(self, html):
         if self.items:
-            html.append(u'<dd ' + self.base_attributes + '>')
+            html.append(u'<dd' + self.base_attributes + '>')
             html.render(u'    ', self.items)
             html.append(u'</dd>')
 
@@ -69,7 +69,7 @@ class DescriptionList(BaseObject):
             self.add_class('dl-horizontal')
 
     def get_html(self, html):
-        html.append(u'<dl ' + self.base_attributes + '>')
+        html.append(u'<dl' + self.base_attributes + '>')
         for item in self.items:
             term, definition = item
             html.append('    <dt>')
@@ -87,7 +87,7 @@ class ListItem(BaseObject):
         self.items = self.param(items, 'Collection', 'Content of <li>', Collection())
 
     def get_html(self, html):
-        html.append(u'<li ' + self.base_attributes + '>')
+        html.append(u'<li' + self.base_attributes + '>')
         html.render(u'    ', self.items)
         html.append(u'</li>')
 
