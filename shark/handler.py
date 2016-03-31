@@ -20,8 +20,7 @@ from django.views.static import serve
 from shark import models
 from shark.analytics import GoogleAnalyticsTracking
 from shark.common import listify
-from shark.layout import Div
-from shark.layout import Row
+from shark.layout import Div, Spacer, Row
 from shark.models import EditableText, StaticPage as StaticPageModel
 from shark.settings import SharkSettings
 from shark.ui_elements import BreadCrumbs
@@ -128,7 +127,8 @@ class BasePageHandler(BaseHandler):
         content.append(self.nav)
         content.append(self.main)
         if self.crumbs:
-            self.base_object.insert(0, Row(Div(BreadCrumbs(*self.crumbs), classes='col-md-12')))
+            self.base_object.insert(0, Spacer())
+            self.base_object.insert(1, Row(Div(BreadCrumbs(*self.crumbs), classes='col-md-12')))
         content.append(self.items)
         content.append(self.footer)
 
