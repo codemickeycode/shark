@@ -384,7 +384,7 @@ class Collection(list):
                 if isinstance(web_object, BaseObject) or isinstance(web_object, Collection):
                     try:
                         if web_object.style:
-                            web_object.add_class(html.add_style_class(web_object.style))
+                            web_object.add_class(html.add_css_class(web_object.style))
                             web_object.style = ''
                         web_object.get_amp_html(html)
                     except Exception as e:
