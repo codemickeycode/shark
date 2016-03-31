@@ -1,3 +1,4 @@
+from shark.common import iif
 from .base import BaseObject, Default, Collection, Markdown, Raw, Size, ButtonState, ButtonStyle
 from .layout import Span, Paragraph, Footer
 
@@ -12,7 +13,7 @@ class Abbrev(Span):
         self.tag = u'abbr'
 
 class Anchor(BaseObject):
-    def __init__(self, text=Default, url='', bss=ButtonStyle.default, size=Size.default, state=ButtonState.none, as_button=False, microdata=False, **kwargs):
+    def __init__(self, text=Default, url='', bss=ButtonStyle.default, size=Size.default, state=ButtonState.none, as_button=False, microdata=False, new_window=Default, **kwargs):
         self.init(kwargs)
         self.text = self.param(text, 'Collection', 'Text of the link', Collection())
         self.url = self.param(url, 'url', 'Url of the link', '')
@@ -21,6 +22,7 @@ class Anchor(BaseObject):
         self.state = self.param(state, 'ButtonState', 'indicates the button state when used as button')
         self.as_button = self.param(as_button, 'boolean', 'Whether the anchor be used as button')
         self.microdata = self.param(microdata, 'boolean', 'This anchor is part of a microdata html part.')
+        self.new_window = self.param(new_window, 'boolean', 'Open in a new window.', Default)
 
         if self.as_button:
             self.role = "button"
@@ -34,12 +36,15 @@ class Anchor(BaseObject):
                     self.add_class('disabled')
 
     def get_html(self, html):
+        if self.new_window == Default:
+            self.new_window = self.url.find('://')>=0 or self.url.startswith('//')
+
         if not self.microdata:
-            html.append('<a href="' + self.url + '"' + self.base_attributes + '>')
+            html.append('<a href="' + self.url + '"' + self.base_attributes + iif(self.new_window, ' target="_blank"') + '>')
             html.inline_render(self.text)
             html.append('</a>')
         else:
-            html.append('<a itemprop="item" href="' + self.url + '"' + self.base_attributes + '><span itemprop="name">')
+            html.append('<a itemprop="item" href="' + self.url + '"' + self.base_attributes + iif(self.new_window, ' target="_blank"') + '><span itemprop="name">')
             html.inline_render(self.text)
             html.append('</span></a>')
 
