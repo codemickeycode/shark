@@ -153,7 +153,7 @@ class Blockquote(BaseObject):
     """
     def __init__(self, text=u'', source=u'', cite=u'', reverse=False, **kwargs):
         self.init(kwargs)
-        self.text = self.param(text, 'string', 'The quotation text', '')
+        self.text = self.param(text, 'markdown', 'The quotation text', '')
         self.source = self.param(source, 'string', 'Source of the quote', '')
         self.cite = self.param(cite, 'string', 'Citiation', '')
         self.reverse = self.param(reverse, 'boolean', 'Specifying whether the quote is reversed', False)
@@ -162,7 +162,7 @@ class Blockquote(BaseObject):
 
     def get_html(self, html):
         html.append('<blockquote ' + self.base_attributes + '>')
-        html.render('    ', Markdown(self.text))
+        html.render('    ', self.text)
         if self.source:
             source_text = self.source + ((' in <cite title="{}">'.format(self.cite) + self.cite + '</cite>') if self.cite else '')
             html.render('    ', Footer(Raw(source_text), id=""))

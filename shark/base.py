@@ -99,8 +99,7 @@ class BaseObject(object):
         elif type == 'markdown':
             if isinstance(value, Raw):
                 value = value.text
-            dirty = markdown.markdown(text=escape(value), output_format='html5')
-            value = bleach.clean(dirty, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES, styles=ALLOWED_STYLES)
+            value = Markdown(value)
         elif type == 'int':
             value = int(value)
         elif type == 'Collection':
