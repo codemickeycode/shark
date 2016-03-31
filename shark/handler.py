@@ -160,24 +160,17 @@ class BasePageHandler(BaseHandler):
 
     def output_amp_html(self, args, kwargs):
         content = Collection()
-        if self.nav:
-            content.append(self.nav)
-        if self.main:
-            content.append(self.main)
+        content.append(self.modals)
+        content.append(self.nav)
+        content.append(self.main)
         if self.crumbs:
-            self.base_object.insert(0, Row(Div(BreadCrumbs(*self.crumbs), classes='col-md-12')))
-
+            self.base_object.insert(0, Spacer())
+            self.base_object.insert(1, Row(Div(BreadCrumbs(*self.crumbs), classes='col-md-12')))
         content.append(self.items)
+        content.append(self.footer)
 
-        if self.footer:
-            content.append(self.footer)
-
-        if content:
-            content_html, content_css = content.render_amp(self)
-            css = '\r\n'.join(content_css.splitlines()) + '\r\n'
-        else:
-            content_html = ''
-            css = ''
+        renderer = Renderer(self)
+        renderer.render('', content)
 
         html = render(self.request, 'base_amp.html', {
                                   'title':self.title,
@@ -185,8 +178,8 @@ class BasePageHandler(BaseHandler):
                                   'keywords':self.keywords,
                                   'author':self.author,
                                   'full_url':self.request.build_absolute_uri(self.url(*args, **kwargs)),
-                                  'content':content_html,
-                                  'css':content_css
+                                  'content':renderer.html,
+                                  'css':renderer.css
         })
 
         return html
