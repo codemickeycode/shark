@@ -12,7 +12,7 @@ from markdown.postprocessors import Postprocessor
 from markdown.serializers import ElementTree
 
 from shark.resources import Resources
-from .common import safe_url, iif
+from .common import safe_url, iif, LOREM_IPSUM
 
 Default = object()
 NotProvided = object()
@@ -214,7 +214,7 @@ class BaseObject(object):
         return JQueryObject("$('#{}')".format(self.id), self)
 
     @classmethod
-    def example(self):
+    def example(cls):
         return None
 
 
@@ -536,7 +536,21 @@ class Text(BaseObject):
 
 class Markdown(BaseObject):
     """
-    Render text as markdown.
+    Render text as markdown. Shark objects can be rendered inside the markup with {{ }} tags
+    and they are passed in through the keyword arguments.
+
+    Several extensions are available:
+
+    - markdown.extensions.codehilite
+    - markdown.extensions.fenced_code
+    - markdown.extensions.abbr
+    - markdown.extensions.def_list
+    - markdown.extensions.footnotes
+    - markdown.extensions.tables
+    - markdown.extensions.smart_strong
+    - markdown.extensions.sane_lists
+    - markdown.extensions.smarty
+    - markdown.extensions.toc
     """
     def __init__(self, text=u'', **kwargs):
         self.init(kwargs)
@@ -578,6 +592,8 @@ class Markdown(BaseObject):
 
     @classmethod
     def example(self):
+        from shark.layout import Panel
+
         return Markdown(
             "###Markdown is great###\n"
             "Many different styles are available through MarkDown:\n\n"
@@ -585,7 +601,14 @@ class Markdown(BaseObject):
             "2. Or *italic*\n"
             "3. And even ***both***\n"
             "\n"
-            "Read more about markdown [here](http://markdown.org)"
+            "You can include shark objects:\n"
+            "{{ panel }}"
+            "\n"
+            "Read more about markdown [here](http://markdown.org)",
+            panel = Panel(
+                header='Just a panel',
+                items=LOREM_IPSUM
+            )
         )
 
 def onclick(text, javascript, row):

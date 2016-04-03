@@ -61,7 +61,7 @@ class Anchor(BaseObject):
 
 class Heading(BaseObject):
     """
-    Adds headings of different sizes. The <small> tag can be used to create a sub-heading.
+    Adds headings of different sizes. The &lt;small&gt; tag can be used to create a sub-heading.
     """
     def __init__(self, text=Default, level=1, subtext=Default, **kwargs):
         self.init(kwargs)

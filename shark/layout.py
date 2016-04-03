@@ -28,7 +28,7 @@ def use_theme(theme):
 
 class Br(BaseObject):
     """
-    Creates the <br/> html tag.
+    Creates the &lt;br/&gt; html tag.
     """
     def __init__(self, **kwargs):
         self.init(kwargs)
@@ -173,7 +173,7 @@ class QuickFloat(Enumeration):
 
 class Div(BaseObject):
     """
-    A flexible <div> element.
+    A flexible &lt;div&gt; element.
     """
     def __init__(self, items=Default, quick_float=QuickFloat.default, centered=False, clearfix=False, **kwargs):
         self.init(kwargs)
@@ -241,7 +241,7 @@ class Spacer(BaseObject):
 
 class Main(BaseObject):
     """
-    Adds a <main> section.
+    Adds a &lt;main&gt; section.
     """
     def __init__(self, items=Default, **kwargs):
         self.init(kwargs)

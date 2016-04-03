@@ -22,6 +22,11 @@ class TableContextualStyle(Enumeration):
 
 
 class Table(BaseObject):
+    """
+    Creates the table element.
+
+    You can construct tables out of all the elements, but more commonly you would use the create_table shortcut.
+    """
     def __init__(self, head=None, rows=Default, table_style=None, **kwargs):
         self.init(kwargs)
         self.head = self.param(head, 'TableHead', 'Table Header')
@@ -35,7 +40,6 @@ class Table(BaseObject):
         elif isinstance(self.table_style, int):
             if not self.table_style == TableStyle.default:
                 self.add_class('table-' + TableStyle.name(self.table_style))
-
 
     def get_html(self, html):
         html.append(u'<table' + self.base_attributes + '>')
@@ -53,6 +57,25 @@ class Table(BaseObject):
         html.append(u'    </tbody>')
         html.append(u'</table>')
 
+    @classmethod
+    def example(cls):
+        return Table(
+            TableHead([
+                TableHeadColumn('Jedi'),
+                TableHeadColumn('Action'),
+                TableHeadColumn('Outcome')
+            ]),
+            TableRow([
+                TableColumn('Luke'),
+                TableColumn('Try'),
+                TableColumn('Fail')
+            ]),
+            TableRow([
+                TableColumn('Yoda'),
+                TableColumn('Do'),
+                TableColumn('Success')
+            ])
+        )
 
 class TableHead(BaseObject):
     def __init__(self, columns=Default, **kwargs):
