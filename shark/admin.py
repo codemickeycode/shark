@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.http import HttpResponseRedirect
 
 from shark.models import EditableText, StaticPage
 
@@ -24,3 +25,11 @@ class EditableTextAdmin(admin.ModelAdmin):
 class StaticPageAdmin(admin.ModelAdmin):
     list_display = ['url_name', 'title']
     ordering = ['url_name']
+
+    def response_post_save_add(self, request, obj):
+        from .handler import StaticPage as StaticPageHandler
+        return HttpResponseRedirect(StaticPageHandler.url(obj.url_name))
+
+    def response_post_save_change(self, request, obj):
+        from .handler import StaticPage as StaticPageHandler
+        return HttpResponseRedirect(StaticPageHandler.url(obj.url_name))
