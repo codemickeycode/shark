@@ -1,13 +1,17 @@
 import inspect
 from functools import partial
 
-import markdown
+import re
+from markdown import markdown, Extension
 import bleach
 from collections import Iterable
-from django.utils.html import escape
-from django.utils.timezone import now
 
-from shark.resources import Resource, Resources
+from django.utils.html import escape
+from markdown.inlinepatterns import SimpleTextPattern, Pattern
+from markdown.postprocessors import Postprocessor
+from markdown.serializers import ElementTree
+
+from shark.resources import Resources
 from .common import safe_url, iif
 
 Default = object()
@@ -20,7 +24,7 @@ class Enumeration(object):
     def name(cls, value):
         obj = cls()
         if not cls.value_map:
-            cls.value_map = {obj.__getattribute__(name):name for name in dir(cls) if name not in dir(Enumeration)}
+            cls.value_map = {obj.__getattribute__(name):name for name in dir(cls) if name not in dir(Enumeration) and isinstance(obj.__getattribute__(name), int)}
 
         return cls.value_map[value]
 
@@ -43,14 +47,16 @@ class JQueryObject(object):
         return JQueryObject(self.javascript + '.fadeOut()', self.obj)
 
 
-ALLOWED_TAGS = ['ul', 'ol', 'li', 'p', 'pre', 'code', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'br', 'strong', 'em', 'a', 'img']
+ALLOWED_TAGS = ['ul', 'ol', 'li', 'p', 'pre', 'code', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'br', 'strong', 'em', 'a', 'img', 'div', 'span']
 
 ALLOWED_ATTRIBUTES = {
     'a': ['href', 'title'],
-    'img': ['src', 'title', 'alt']
+    'img': ['src', 'title', 'alt'],
+    'div': ['style'],
+    'span': ['style']
 }
 
-ALLOWED_STYLES = []
+ALLOWED_STYLES = ['color', 'font-weight']
 
 class BaseObject(object):
     object_number = 0
@@ -69,6 +75,10 @@ class BaseObject(object):
         self.extra_attributes = ''
         self.children = []  # TODO: This isn't populated correctly?
         self.parent = None  # TODO: This isn't populated correctly?
+
+        for kwarg in ['id', 'term', 'classes', 'style', 'tab_index', 'role', 'onclick']:
+            if kwarg in kwargs:
+                del kwargs[kwarg]
 
         self.edit_mode = False
 
@@ -231,6 +241,7 @@ class PlaceholderWebObject(object):
 class Renderer:
     def __init__(self, handler=None, amp=False, inline_style_class_base='style_'):
         self._html = []
+        self._rendering_to = self._html
         self._css = []
         self._css_classes = {}
         self._js = []
@@ -257,7 +268,7 @@ class Renderer:
 
     def append(self, p_object):
         if isinstance(p_object, str):
-            self._html.append((' '*self.indent if not self.omit_next_indent else '') + p_object + self.separator)
+            self._rendering_to.append((' '*self.indent if not self.omit_next_indent else '') + p_object + self.separator)
             self.omit_next_indent = False
 
     def append_css(self, css):
@@ -287,8 +298,8 @@ class Renderer:
                 web_object.get_amp_html(self)
 
     def inline_render(self, web_object):
-        if self.separator and len(self._html) and self._html[-1].endswith(self.separator):
-            self._html[-1] = self._html[-1][:-len(self.separator)]
+        if self.separator and len(self._rendering_to) and self._rendering_to[-1].endswith(self.separator):
+            self._rendering_to[-1] = self._rendering_to[-1][:-len(self.separator)]
         if web_object:
             if not isinstance(web_object, BaseObject) and not isinstance(web_object, Collection):
                 web_object = Collection(web_object)
@@ -307,12 +318,20 @@ class Renderer:
 
         self.omit_next_indent = True
 
+    def render_string(self, web_object):
+        original = self._rendering_to
+        self._rendering_to = []
+        self.render('', web_object)
+        html = self.html
+        self._rendering_to = original
+        return html
+
     def add_resource(self, url, type, module, name=''):
         self.resources.add_resource(url, type, module, name)
 
     @property
     def html(self):
-        return ''.join(self._html)
+        return ''.join(self._rendering_to)
 
     @property
     def css(self):
@@ -471,6 +490,50 @@ class Text(BaseObject):
         return Text('Hello world!')
 
 
+# class ContextItemPattern(Pattern):
+#     def __init__(self, pattern, markdown_instance=None, extension=None, renderer=None):
+#         self.extension = extension
+#         super().__init__(pattern, markdown_instance)
+#
+#     def handleMatch(self, m):
+#         arg_name = m.group(2).strip()
+#         if arg_name in self.extension.context:
+#             html = self.extension.renderer.render_string(self.extension.context[arg_name])
+#             return html
+#         else:
+#             return arg_name
+#
+# class ContextPostprocessor(Postprocessor):
+#     def __init__(self, extension=None):
+#         self.extension = extension
+#         super().__init__()
+#
+#     def run(self, text):
+#         for match in re.finditer('{{(.*?)}}', text):
+#             arg_name = match.group(1).strip()
+#             if arg_name in self.extension.context:
+#                 html = self.extension.renderer.render_string(self.extension.context[arg_name])
+#             else:
+#                 html = arg_name
+#             text = re.sub(match.group(0), html, text)
+#
+#         return text
+#
+#
+# class ContextExtension(Extension):
+#     def __init__(self):
+#         super().__init__()
+#         self.renderer = None
+#         self.context = []
+#
+#     def extendMarkdown(self, md, md_globals):
+#         md.postprocessors.add('context', ContextPostprocessor(self), '_end')
+#
+#     def set_context(self, context, renderer):
+#         self.context = context
+#         self.renderer = renderer
+#
+
 class Markdown(BaseObject):
     """
     Render text as markdown.
@@ -478,14 +541,38 @@ class Markdown(BaseObject):
     def __init__(self, text=u'', **kwargs):
         self.init(kwargs)
         self.text = self.param(text, 'raw', 'Text to render as markdown')
+        self.context = kwargs
 
     def get_html(self, html):
-        dirty = markdown.markdown(text=escape(self.text), output_format='html5')
+        extensions = [
+            'markdown.extensions.codehilite',
+            'markdown.extensions.fenced_code',
+            'markdown.extensions.abbr',
+            'markdown.extensions.def_list',
+            'markdown.extensions.footnotes',
+            'markdown.extensions.tables',
+            'markdown.extensions.smart_strong',
+            'markdown.extensions.sane_lists',
+            'markdown.extensions.smarty',
+            'markdown.extensions.toc'
+        ]
+
+        dirty = markdown(text=self.text, output_format='html5', extensions=extensions, extension_configs={
+            'markdown.extensions.codehilite': {'css_class': 'highlight', 'noclasses': True}
+        })
         clean = bleach.clean(dirty, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES, styles=ALLOWED_STYLES)
+        for match in re.finditer('{{(.*?)}}', clean):
+            arg_name = match.group(1).strip()
+            if arg_name in self.context:
+                raw = html.render_string(self.context[arg_name])
+            else:
+                raw = arg_name
+            clean = re.sub(match.group(0), raw, clean)
+
         html.append(clean)
 
     def get_amp_html(self, html):
-        dirty = markdown.markdown(text=escape(self.text), output_format='html5')
+        dirty = markdown(text=self.text, output_format='html5')
         clean = bleach.clean(dirty, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES, styles=ALLOWED_STYLES)
         html.append(clean)
 

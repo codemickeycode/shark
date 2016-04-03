@@ -4,7 +4,7 @@ from .base import Raw, Enumeration
 def glyph(name):
     if isinstance(name, int):
         name = Glyph.name(name)
-    return Raw('<span class="glyphicon glyphicon-' + name + '"></span>')
+    return Raw('<span class="glyphicon glyphicon-' + name.strip('_').replace('_', '-') + '"></span>')
 
 
 class Glyph(Enumeration):

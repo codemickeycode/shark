@@ -1,10 +1,12 @@
+from shark.font_awesome import Icon
 from .base import BaseObject, Default, Collection
 
 
 class UnorderedList(BaseObject):
-    def __init__(self, items=Default, **kwargs):
+    def __init__(self, items=None, icon_list=False, **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'List items in <ul>', Collection())
+        self.items = self.param(items, 'Collection', 'List items in <ul>')
+        self.icon_list = self.param(icon_list, 'boolean', 'Use Font Awesome icons as bullets')
 
     def get_html(self, html):
         html.append(u'<ul' + self.base_attributes + '>')
@@ -82,9 +84,13 @@ class DescriptionList(BaseObject):
 
 
 class ListItem(BaseObject):
-    def __init__(self, items=Default, **kwargs):
+    def __init__(self, items=None, icon='', **kwargs):
+        if isinstance(icon, int):
+            icon = Icon.name(icon)
+
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'Content of <li>', Collection())
+        self.items = self.param(items, 'Collection', 'Content of <li>')
+        self.icon = self.param(icon, 'string', 'Font Awesome icon to use as bullet')
 
     def get_html(self, html):
         html.append(u'<li' + self.base_attributes + '>')

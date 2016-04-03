@@ -128,6 +128,25 @@ class Code(BaseObject):
         html.append('<code' + self.base_attributes + '>' + self.text + '</code>')
 
 
+class Br(BaseObject):
+    """
+    Adds a line break.
+    """
+    def __init__(self, **kwargs):
+        self.init(kwargs)
+
+    def get_html(self, html):
+        html.append('<br' + self.base_attributes + '/>')
+
+    @classmethod
+    def example(self):
+        return Collection([
+            'Line 1',
+            Br(),
+            'Line 2'
+        ])
+
+
 class Hr(BaseObject):
     """
     Adds a horizontal divider.
