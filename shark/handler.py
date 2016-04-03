@@ -22,7 +22,9 @@ from shark.analytics import GoogleAnalyticsTracking
 from shark.common import listify
 from shark.layout import Div, Spacer, Row
 from shark.models import EditableText, StaticPage as StaticPageModel
+from shark.navigation import NavLink
 from shark.settings import SharkSettings
+from shark.text import Anchor
 from shark.ui_elements import BreadCrumbs
 from .base import Collection, BaseObject, PlaceholderWebObject, Default, ALLOWED_TAGS, ALLOWED_ATTRIBUTES, \
     ALLOWED_STYLES, Markdown, Renderer
@@ -373,6 +375,10 @@ class StaticPage(BasePageHandler):
         self.title = page.title
         self.description = page.description
         self.append(Markdown(page.body))
+
+        if self.user.is_staff and self.user.has_perm('shark.staticpage_change'):
+            if self.nav:
+                self.nav.right_items.append(NavLink('Edit Page', reverse('admin:shark_staticpage_change', args=[page.url_name])))
 
     @classmethod
     def url(cls, *args, **kwargs):
