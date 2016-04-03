@@ -64,17 +64,18 @@ class Table(BaseObject):
                 TableHeadColumn('Jedi'),
                 TableHeadColumn('Action'),
                 TableHeadColumn('Outcome')
-            ]),
-            TableRow([
-                TableColumn('Luke'),
-                TableColumn('Try'),
-                TableColumn('Fail')
-            ]),
-            TableRow([
-                TableColumn('Yoda'),
-                TableColumn('Do'),
-                TableColumn('Success')
-            ])
+            ]), [
+                TableRow([
+                    TableColumn('Luke'),
+                    TableColumn('Try'),
+                    TableColumn('Fail')
+                ]),
+                TableRow([
+                    TableColumn('Yoda'),
+                    TableColumn('Do'),
+                    TableColumn('Success')
+                ])
+            ]
         )
 
 class TableHead(BaseObject):
@@ -166,7 +167,12 @@ class TableColumn(BaseObject):
 
 
 
-def create_table(data, columns, transforms=None, include_header=True, table_style=None):
+def create_table(
+        data: 'Data for the table, can be a QuerySet or a list of dicts',
+        columns: 'A list of strings of the column names to display',
+        transforms: 'A dictionary of column names and functions that take the row as argument and return the text or objects to render' = None,
+        include_header: 'Include the table header' = True,
+        table_style: 'Optional table styles, such as condensed' = None) -> 'Table object for the data':
     transforms = transforms or []
     table = Table(table_style=table_style)
     if data:

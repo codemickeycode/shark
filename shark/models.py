@@ -77,6 +77,10 @@ class StaticPage(SharkModel):
     robots_index = BooleanField(verbose_name='robots.txt index?', default=True)
     robots_follow = BooleanField(verbose_name='robots.txt follow?', default=True)
 
+    def get_absolute_url(self):
+        from .handler import StaticPage as StaticPageHandler
+        return StaticPageHandler.url(self.url_name)
+
 
 class Log(SharkModel):
     created = DateTimeField(default=now)

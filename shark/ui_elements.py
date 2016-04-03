@@ -248,6 +248,12 @@ class Video(BaseObject):
 
 
 class GoogleMaps(BaseObject):
+    """
+    Render a Google Maps map.
+
+    Be sure to set the SHARK_GOOGLE_BROWSER_API_KEY setting in your settings.py.
+    You can get this key in the [Google Developers API Console](https://console.developers.google.com/apis/library)
+    """
     def __init__(self, location='', width='100%', height='250px', **kwargs):
         self.init(kwargs)
         self.location = self.param(location, 'string', 'Location name or "long, lat"')
@@ -256,6 +262,10 @@ class GoogleMaps(BaseObject):
 
     def get_html(self, html):
         html.append('<iframe' + self.base_attributes + ' width="{}" height="{}" frameborder="0" style="border:0" src="https://www.google.com/maps/embed/v1/place?key={}&{}" allowfullscreen></iframe>'.format(self.width, self.height, SharkSettings.SHARK_GOOGLE_BROWSER_API_KEY, urlencode({'q': self.location})))
+
+    @classmethod
+    def example(cls):
+        return GoogleMaps('Fukuoka, Japan')
 
 
 class SearchBox(BaseObject):

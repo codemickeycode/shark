@@ -1,5 +1,4 @@
 import inspect
-import shark
 from shark.base import BaseObject, Default
 from shark.common import iif
 
@@ -7,6 +6,7 @@ from shark.common import iif
 class ObjectInspector(object):
     def load(self, mod):
         objects = []
+        functions = []
         filename = inspect.getfile(mod)
 
         for key in dir(mod):
@@ -33,6 +33,9 @@ class ObjectInspector(object):
                 obj.param = old_param
                 code = inspect.getsourcelines(obj)
                 objects.append((key, obj, param_info, code[0], code[1]))
+
+            if inspect.isfunction(obj) and inspect.getfile(obj)==filename:
+                functions.append((obj, inspect.signature(obj).parameters))
 
         objects.sort(key=lambda obj:obj[4])
         return objects
