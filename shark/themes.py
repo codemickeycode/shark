@@ -22,4 +22,4 @@ class ProfilePanel(BaseObject):
         html.append('    </div>')
         html.append('</div>')
 
-Resources.add_resource('/static/shark/css/profile.css', 'css', 'themes', 'profile')
+        html.add_resource('/static/shark/css/profile.css', 'css', 'themes', 'profile')

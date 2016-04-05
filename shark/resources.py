@@ -29,3 +29,4 @@ class Resources:
         else:
             logging.warning('Resource {} cannot be found to be replaced. Added instead.'.format(key))
             cls.add_resource(url, type, module, name)
+

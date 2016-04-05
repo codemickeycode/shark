@@ -4,7 +4,7 @@ from django.utils.http import urlencode
 
 from shark.settings import SharkSettings
 from shark.text import Anchor
-from .layout import Panel, multiple_div_row
+from .layout import Panel, multiple_div_row, Row, Paragraph
 from .base import BaseObject, Collection, Default, Enumeration, iif, Raw
 
 
@@ -143,9 +143,11 @@ class Carousel(BaseObject):
     def __init__(self, slides=Default, **kwargs):
         self.init(kwargs)
         self.slides = self.param(slides, 'list', 'List of slides.', [])
+        self.id_needed = True
 
     def get_html(self, html):
-        html.append('<div id="carousel-example-generic" class="carousel slide" data-ride="carousel">')
+        self.add_class('carousel slide')
+        html.append('<div' + self.base_attributes + ' data-ride="carousel">')
         html.append('    <ol class="carousel-indicators">')
         for i, slide in enumerate(self.slides):
             html.append('        <li data-target="#carousel-example-generic" data-slide-to="{}"{}></li>'.format(i, ' class="active"' if i==0 else ''))
@@ -161,15 +163,17 @@ class Carousel(BaseObject):
             html.append('        </div>')
         html.append('    </div>')
 
-        html.append('    <a class="left carousel-control" href="#carousel-example-generic" role="button" data-slide="prev">')
+        html.append('    <a class="left carousel-control" href="#{}" role="button" data-slide="prev">'.format(self.id))
         html.append('        <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>')
         html.append('        <span class="sr-only">Previous</span>')
         html.append('    </a>')
-        html.append('    <a class="right carousel-control" href="#carousel-example-generic" role="button" data-slide="next">')
+        html.append('    <a class="right carousel-control" href="#{}" role="button" data-slide="next">'.format(self.id))
         html.append('        <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>')
         html.append('        <span class="sr-only">Next</span>')
         html.append('    </a>')
         html.append('</div>')
+
+        html.append_js('$("#{}").carousel()'.format(self.id))
 
     @classmethod
     def example(self):
@@ -180,20 +184,78 @@ class Carousel(BaseObject):
         ])
 
 
-class CloseIcon(BaseObject):
-    def __init__(self, action=None, **kwargs):
+class Tab(BaseObject):
+    def __init__(self, name='', items='', active=False, **kwargs):
         self.init(kwargs)
-        self.action = self.param(action, 'action', 'Action when the the close icon is clicked')
-        if self.action:
-            self.add_attribute('onclick', self.action)
+        self.name = self.param(name, 'Collection', 'Name of the tab')
+        self.items = self.param(items, 'Collection', 'Content of the tab')
+        self.active = self.param(active, 'boolean', 'Make this the active tab. Defaults to the first tab')
+        self.id_needed = True
 
     def get_html(self, html):
-        html.append('<button type="button"' + self.base_attributes + ' class="close" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
+        html.append('<div' + self.base_attributes + ' role="tabpanel" class="tab-pane{}">'.format(' active' if self.active else ''))
+        html.render('    ', self.items)
+        html.append('</div>')
+
+
+class Tabs(BaseObject):
+    def __init__(self, tabs=None, **kwargs):
+        self.init(kwargs)
+        self.tabs = self.param(tabs, 'Collection', 'The list of Tab objects')
+        self.id_needed = True
+
+    def get_html(self, html):
+        if not self.tabs:
+            return None
+        active_tab = None
+        for tab in self.tabs:
+            if tab.active:
+                if active_tab is None:
+                    active_tab = tab.active
+                else:
+                    tab.active = False
+        if not active_tab:
+            self.tabs[0].active = True
+
+        html.append('<ul' + self.base_attributes + ' class="nav nav-tabs {}" role="tablist">'.format(
+            html.add_css_class('margin-bottom: 15px;')
+        ))
+        for tab in self.tabs:
+            html.append('    <li role="presentation"{}><a href="#{}" aria-controls="{}" role="tab" data-toggle="tab">'.format(
+                ' class="active"' if tab.active else '',
+                tab.id, tab.id
+            ))
+            html.render('    ', tab.name)
+            html.append('</a></li>')
+        html.append('</ul>')
+
+        html.append('<div class="tab-content">')
+        for tab in self.tabs:
+            html.render('    ', tab)
+        html.append('</div>')
+
+        html.append_js('$("#' + self.id + ' a").click(function (e) {e.preventDefault(); $(this).tab("show")})')
+
+    @classmethod
+    def example(cls):
+        return Tabs([
+            Tab('Home', Paragraph('Home sweet home')),
+            Tab('Away', Paragraph('Away from home'))
+        ])
+
+
+class CloseIcon(BaseObject):
+    def __init__(self, js=None, **kwargs):
+        self.init(kwargs)
+        self.js = self.param(js, 'JS', 'Action when the the close icon is clicked')
+
+    def get_html(self, html):
+        html.append('<button type="button"' + self.base_attributes + self.js.onclick + ' class="close" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
 
     @classmethod
     def example(cls):
         panel = Panel('Hello world')
-        panel.items.append(CloseIcon(panel.jquery.fadeOut().fadeIn()))
+        panel.append(CloseIcon(panel.jq.fadeOut().fadeIn()))
         return panel
 
 

@@ -1,5 +1,5 @@
 from .base import BaseObject, Default, Collection, Enumeration
-from .resources import Resources
+from .resources import Resources, Resource
 
 
 class BootswatchTheme(Enumeration):
@@ -20,6 +20,10 @@ class BootswatchTheme(Enumeration):
     superhero = 15
     united = 16
     yeti = 17
+
+
+def get_theme_resource(theme):
+    return Resource('https://maxcdn.bootstrapcdn.com/bootswatch/3.3.6/{}/bootstrap.min.css'.format(BootswatchTheme.name(theme)), 'css', 'bootstrap', 'main')
 
 
 def use_theme(theme):
@@ -228,7 +232,7 @@ class Spacer(BaseObject):
         self.pixels = self.param(pixels, 'int', 'Vertical spacing in pixels')
 
     def get_html(self, html):
-        html.append('<div style="height:{}px;"></div>'.format(self.pixels))
+        html.append('<div' + self.base_attributes + ' style="height:{}px;"></div>'.format(self.pixels))
 
     @classmethod
     def example(self):

@@ -150,8 +150,8 @@ class BasePageHandler(BaseHandler):
                                   'keywords': self.keywords,
                                   'author': self.author,
                                   'content': renderer.html,
-                                  'extra_css': '\n\r'.join(['        <link rel="stylesheet" href="' + css_file + '"/>' for css_file in renderer.css_files]),
-                                  'extra_js': '\n\r'.join(['        <script src="' + js_file + '"></script>' for js_file in renderer.js_files]),
+                                  'extra_css': '\r\n'.join(['        <link rel="stylesheet" href="' + css_resource.url + '" id="resource-{}-{}"/>'.format(css_resource.module, css_resource.name) for css_resource in renderer.css_resources]),
+                                  'extra_js': '\r\n'.join(['        <script src="' + js_file + '"></script>' for js_file in renderer.js_files]),
                                   'javascript': renderer.js,
                                   'css': renderer.css,
                                   'keep_variables': keep_variables,
@@ -282,6 +282,9 @@ class BasePageHandler(BaseHandler):
             text.save()
 
         return text.content
+
+    def replace_resource_js(self, resource):
+        return '$("#resource-{}-{}").href("{}");'.format(resource.module, resource.name, resource.url)
 
     def _save_term(self, name, content):
         if self.user.is_superuser:

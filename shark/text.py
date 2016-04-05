@@ -16,7 +16,7 @@ class Anchor(BaseObject):
     def __init__(self, text=Default, url='', bss=ButtonStyle.default, size=Size.default, state=ButtonState.none, as_button=False, microdata=False, new_window=Default, **kwargs):
         self.init(kwargs)
         self.text = self.param(text, 'Collection', 'Text of the link', Collection())
-        self.url = self.param(url, 'url', 'Url of the link', '')
+        self.url = self.param(url, 'URL', 'Action when clicked', '')
         self.bss = self.param(bss, 'ButtonStyle', 'Visual style of the button')
         self.size = self.param(size, 'Size', 'indicate size when used as button')
         self.state = self.param(state, 'ButtonState', 'indicates the button state when used as button')
@@ -37,24 +37,27 @@ class Anchor(BaseObject):
 
     def get_html(self, html):
         if self.new_window == Default:
-            self.new_window = self.url.find('://')>=0 or self.url.startswith('//')
+            self.new_window = self.url.url.find('://')>=0 or self.url.url.startswith('//')
 
         if not self.microdata:
-            html.append('<a href="' + self.url + '"' + self.base_attributes + iif(self.new_window, ' target="_blank"') + '>')
+            html.append('<a' + self.url.href + self.base_attributes + iif(self.new_window, ' target="_blank"') + '>')
             html.inline_render(self.text)
             html.append('</a>')
         else:
-            html.append('<a itemprop="item" href="' + self.url + '"' + self.base_attributes + iif(self.new_window, ' target="_blank"') + '><span itemprop="name">')
+            html.append('<a itemprop="item"' + self.url.href + self.base_attributes + iif(self.new_window, ' target="_blank"') + '><span itemprop="name">')
             html.inline_render(self.text)
             html.append('</span></a>')
 
     def get_amp_html(self, html):
+        if self.new_window == Default:
+            self.new_window = self.url.url.find('://')>=0 or self.url.url.startswith('//')
+
         if not self.microdata:
-            html.append('<a href="' + self.url + '"' + self.base_attributes + '>')
+            html.append('<a' + self.url.href + self.base_attributes + iif(self.new_window, ' target="_blank"') + '>')
             html.inline_render(self.text)
             html.append('</a>')
         else:
-            html.append('<a itemprop="item" href="' + self.url + '"' + self.base_attributes + '><span itemprop="name">')
+            html.append('<a itemprop="item"' + self.url.href + self.base_attributes + iif(self.new_window, ' target="_blank"') + '><span itemprop="name">')
             html.inline_render(self.text)
             html.append('</span></a>')
 

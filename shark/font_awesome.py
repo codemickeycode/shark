@@ -89,13 +89,19 @@ class Icon(BaseObject, Enumeration):
             return extra, extra_icon
 
         if not self.stacked_on:
-            html.append('<span' + self.base_attributes + ' class="fa fa-' + self.name.strip('_').replace('_', '-') + '{}{}"></span>'.format(*get_extra(self)))
+            self.add_class('fa fa-' + self.name.strip('_').replace('_', '-'))
+            self.add_class(''.join(get_extra(self)))
+            html.append('<span' + self.base_attributes + '></span>')
         else:
             if not isinstance(self.stacked_on, Icon):
                 self.stacked_on = Icon(self.stacked_on)
-            html.append('<span' + self.base_attributes + ' class="fa-stack {}">'.format(get_extra(self)[0]))
+            self.add_class('fa-stack')
+            self.add_class(get_extra(self)[0])
+            html.append('<span' + self.base_attributes + '>')
             small_icon = '    <span class="fa fa-stack-1x fa-' + self.name.strip('_').replace('_', '-') + '{}"></span>'.format(get_extra(self)[1])
-            large_icon = '    <span' + self.stacked_on.base_attributes + ' class="fa fa-stack-2x fa-' + self.stacked_on.name.strip('_').replace('_', '-') + '{}"></span>'.format(get_extra(self.stacked_on)[1])
+            self.stacked_on.add_class('fa fa-stack-2x fa-' + self.stacked_on.name.strip('_').replace('_', '-'))
+            self.stacked_on.add_class(get_extra(self.stacked_on)[1])
+            large_icon = '    <span' + self.stacked_on.base_attributes + '></span>'
 
             if self.stacked_on_top:
                 html.append(small_icon)
@@ -118,7 +124,7 @@ class Icon(BaseObject, Enumeration):
             # Some examples of stacked icons
             Icon('flag', inverse=True, stacked_on='circle'), 'Simple stacked icons', Br(),
             Icon(Icon.terminal, inverse=True, stacked_on=Icon('square')), 'Stacked icon can be just the name or an actual Icon', Br(),
-            Icon('camera', stacked_on=Icon('ban', style='color: #d9534f;'), stacked_on_top=True), 'Another example', Br()
+            Icon('camera', stacked_on=Icon('ban', classes='text-danger'), stacked_on_top=True), 'Another example', Br()
         ], [
             Paragraph([
                 Icon('quote_left', 2, border=True, pull_left=True),

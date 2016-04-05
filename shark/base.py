@@ -1,18 +1,16 @@
 import inspect
+import logging
 from functools import partial
-
 import re
-from markdown import markdown, Extension
+
+from django.contrib.admin.utils import unquote
+from markdown import markdown
 import bleach
 from collections import Iterable
-
 from django.utils.html import escape
-from markdown.inlinepatterns import SimpleTextPattern, Pattern
-from markdown.postprocessors import Postprocessor
-from markdown.serializers import ElementTree
-
+from shark.actions import URL, NoAction, BaseAction, JS, Action, JQ
 from shark.resources import Resources
-from .common import safe_url, iif, LOREM_IPSUM
+from .common import iif, LOREM_IPSUM
 
 Default = object()
 NotProvided = object()
@@ -29,24 +27,6 @@ class Enumeration(object):
         return cls.value_map[value]
 
 
-class JQueryObject(object):
-    def __init__(self, javascript, obj=None):
-        self.javascript = javascript
-        self.obj = obj
-
-    def show(self):
-        return JQueryObject(self.javascript + '.show()', self.obj)
-
-    def hide(self):
-        return JQueryObject(self.javascript + '.hide()', self.obj)
-
-    def fadeIn(self):
-        return JQueryObject(self.javascript + '.fadeIn()', self.obj)
-
-    def fadeOut(self):
-        return JQueryObject(self.javascript + '.fadeOut()', self.obj)
-
-
 ALLOWED_TAGS = ['ul', 'ol', 'li', 'p', 'pre', 'code', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'br', 'strong', 'em', 'a', 'img', 'div', 'span']
 
 ALLOWED_ATTRIBUTES = {
@@ -57,6 +37,7 @@ ALLOWED_ATTRIBUTES = {
 }
 
 ALLOWED_STYLES = ['color', 'font-weight']
+
 
 class BaseObject(object):
     object_number = 0
@@ -102,10 +83,46 @@ class BaseObject(object):
             else:
                 value = ''
         elif type == 'url':
-            if not value is None:
-                value = safe_url(value)
-            else:
+            if isinstance(value, str):
+                value = unquote(value)
+            elif isinstance(value, URL):
+                value = value.url
+            elif not value:
                 value = ''
+            else:
+                value = unquote(str(value))
+
+        elif type == 'URL':
+            if not value:
+                value = NoAction()
+            elif isinstance(value, str):
+                value = URL(value)
+            elif isinstance(value, JQ):
+                value = JS(value.js)
+            elif not isinstance(value, BaseAction):
+                logging.warning('Value is not a BaseAction or str.')
+                value = None
+        elif type == 'JS':
+            if not value:
+                value = NoAction()
+            elif isinstance(value, str):
+                value = JS(value)
+            elif isinstance(value, JQ):
+                value = JS(value.js)
+            elif not isinstance(value, BaseAction):
+                logging.warning('Value is not a BaseAction or str.')
+                value = None
+        elif type == 'Action':
+            if not value:
+                value = NoAction()
+            elif isinstance(value, str):
+                value = Action(value)
+            elif isinstance(value, JQ):
+                value = JS(value.js)
+            elif not isinstance(value, BaseAction):
+                logging.warning('Value is not a BaseAction or str.')
+                value = None
+
         elif type == 'markdown':
             if isinstance(value, Raw):
                 value = value.text
@@ -132,17 +149,14 @@ class BaseObject(object):
         elif type == 'list':
             if not value.__class__ is list:
                 value = [value]
-        elif type == 'action':
-            if isinstance(value, JQueryObject):
-                value = value.javascript
-            else:
-                pass #TODO: Implement server actions and links
 
         return value
 
     def append(self, *args, **kwargs):
         if 'items' in dir(self):
             self.__getattribute__('items').append(*args, **kwargs)
+        else:
+            raise KeyError('Object has no "items" Collection')
 
     def find_id(self, id):
         if self.id == id:
@@ -167,7 +181,11 @@ class BaseObject(object):
                self.extra_attributes
 
     def add_class(self, class_names):
-        self.classes = (self.classes + ' ' + class_names).strip()
+        new_classes = class_names.split()
+        existing_classes = self.classes.split()
+        for class_name in new_classes:
+            if class_name not in existing_classes:
+                self.classes = (self.classes + ' ' + class_name)
 
     def add_attribute(self, attribute, value):
         if value:
@@ -210,8 +228,9 @@ class BaseObject(object):
         pass # For code completion
 
     @property
-    def jquery(self):
-        return JQueryObject("$('#{}')".format(self.id), self)
+    def jq(self):
+        self.id_needed = True
+        return JQ("$('#{}')".format(self.id), self)
 
     @classmethod
     def example(cls):
@@ -257,7 +276,7 @@ class Renderer:
         else:
             self.edit_mode = False
             self.text = ''
-        self.separator = '\n\r'
+        self.separator = '\r\n'
         self.omit_next_indent = False
         self.amp = amp
 
@@ -350,8 +369,16 @@ class Renderer:
         return [resource.url for resource in self.resources.resources if resource.type=='css']
 
     @property
+    def css_resources(self):
+        return [resource for resource in self.resources.resources if resource.type=='css']
+
+    @property
     def js_files(self):
         return [resource.url for resource in self.resources.resources if resource.type=='js']
+
+    @property
+    def js_resources(self):
+        return [resource for resource in self.resources.resources if resource.type=='js']
 
 
 class Collection(list):

@@ -33,7 +33,9 @@ class Table(BaseObject):
         self.rows = self.param(rows, 'Collection', 'Rows in the table', Collection())
         self.table_style = self.param(table_style, 'TableStyle', 'Style for the table')
         self.add_class('table')
-        if isinstance(self.table_style, Iterable):
+        if isinstance(self.table_style, str):
+            self.add_class('table-' + self.table_style)
+        elif isinstance(self.table_style, Iterable):
             for s in self.table_style:
                 if not s == TableStyle.default:
                     self.add_class('table-' + TableStyle.name(s))

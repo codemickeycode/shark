@@ -118,15 +118,15 @@ class NavBrand(BaseObject):
     def __init__(self, name=Default, url='/', **kwargs):
         self.init(kwargs)
         self.name = self.param(name, 'Collection', 'Name and or logo of the application', Collection())
-        self.url = self.param(url, 'url', 'URL to navigate to when the brand name is clicked')
+        self.url = self.param(url, 'URL', 'URL to navigate to when the brand name is clicked')
 
     def get_html(self, html):
-        html.append('<a' + self.base_attributes + ' class="navbar-brand" href="' + self.url + '">')
+        html.append('<a' + self.base_attributes + ' class="navbar-brand"' + self.url.href + '>')
         html.inline_render(self.name)
         html.append('</a>')
 
     def get_amp_html(self, html):
-        html.append('<a' + self.base_attributes + ' class="navbar-brand" href="' + self.url + '">')
+        html.append('<a' + self.base_attributes + ' class="navbar-brand"' + self.url.href + '>')
         html.inline_render(self.name)
         html.append('</a>')
 
@@ -135,21 +135,16 @@ class NavLink(BaseObject):
     def __init__(self, name=Default, url=None, active=False, **kwargs):
         self.init(kwargs)
         self.name = self.param(name, 'Collection', 'Name of the link', Collection())
-        self.url = self.param(url, 'url', 'URL to navigate to when the item is clicked')
+        self.url = self.param(url, 'URL', 'URL to navigate to when the item is clicked')
         self.active = self.param(active, 'boolean', 'Display as activated')
 
     def get_html(self, html):
         if self.active:
             self.add_class('active')
 
-        if self.url:
-            html.append('<li' + self.base_attributes + '><a href="' + self.url + '">')
-            html.render('    ', self.name)
-            html.append('</a></li>')
-        else:
-            html.append('<li' + self.base_attributes + '><a href="#">')
-            html.render('    ', self.name)
-            html.append('</a></li>')
+        html.append('<li' + self.base_attributes + '><a' + self.url.href + '>')
+        html.render('    ', self.name)
+        html.append('</a></li>')
 
 
 class NavDivider(BaseObject):

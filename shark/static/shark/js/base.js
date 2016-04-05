@@ -63,7 +63,4 @@ $(document).ready(function() {
     });
 
     bind_forms();
-
-    //TODO: Move
-    $('.carousel').carousel()
 });
