@@ -23,7 +23,10 @@ class BootswatchTheme(Enumeration):
 
 
 def get_theme_resource(theme):
-    return Resource('https://maxcdn.bootstrapcdn.com/bootswatch/3.3.6/{}/bootstrap.min.css'.format(BootswatchTheme.name(theme)), 'css', 'bootstrap', 'main')
+    if isinstance(theme, str):
+        return Resource('https://maxcdn.bootstrapcdn.com/bootswatch/3.3.6/{}/bootstrap.min.css'.format(theme), 'css', 'bootstrap', 'main')
+    else:
+        return Resource('https://maxcdn.bootstrapcdn.com/bootswatch/3.3.6/{}/bootstrap.min.css'.format(BootswatchTheme.name(theme)), 'css', 'bootstrap', 'main')
 
 
 def use_theme(theme):

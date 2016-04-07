@@ -1,9 +1,11 @@
 import inspect
+import json
 import logging
 from functools import partial
 import re
 
 from django.contrib.admin.utils import unquote
+from django.utils.http import urlquote
 from markdown import markdown
 import bleach
 from collections import Iterable
@@ -16,15 +18,23 @@ Default = object()
 NotProvided = object()
 
 class Enumeration(object):
-    value_map = None
+    _value_map = None
+
+    @classmethod
+    def value_map(cls):
+        obj = cls()
+        if not cls._value_map:
+            cls._value_map = {obj.__getattribute__(name):name for name in dir(cls) if name not in dir(Enumeration) and isinstance(obj.__getattribute__(name), int)}
+
+        return cls._value_map
 
     @classmethod
     def name(cls, value):
-        obj = cls()
-        if not cls.value_map:
-            cls.value_map = {obj.__getattribute__(name):name for name in dir(cls) if name not in dir(Enumeration) and isinstance(obj.__getattribute__(name), int)}
+        return cls.value_map()[value]
 
-        return cls.value_map[value]
+    @classmethod
+    def names(cls):
+        return cls.value_map().values()
 
 
 ALLOWED_TAGS = ['ul', 'ol', 'li', 'p', 'pre', 'code', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'br', 'strong', 'em', 'a', 'img', 'div', 'span']
@@ -57,11 +67,18 @@ class BaseObject(object):
         self.children = []  # TODO: This isn't populated correctly?
         self.parent = None  # TODO: This isn't populated correctly?
 
+        self.variables = {}
+
         for kwarg in ['id', 'term', 'classes', 'style', 'tab_index', 'role', 'onclick']:
             if kwarg in kwargs:
                 del kwargs[kwarg]
 
         self.edit_mode = False
+
+    def add_variable(self, web_object):
+        name = self.id.lower() + '_' + str(len(self.variables) + 1)
+        self.variables[name] = web_object
+        return name
 
     def param(self, value, type, description, default=None):
         if value == Default:
@@ -84,13 +101,13 @@ class BaseObject(object):
                 value = ''
         elif type == 'url':
             if isinstance(value, str):
-                value = unquote(value)
+                value = urlquote(value, ':/@')
             elif isinstance(value, URL):
                 value = value.url
             elif not value:
                 value = ''
             else:
-                value = unquote(str(value))
+                value = urlquote(str(value, ':/@'))
 
         elif type == 'URL':
             if not value:
@@ -156,7 +173,7 @@ class BaseObject(object):
         if 'items' in dir(self):
             self.__getattribute__('items').append(*args, **kwargs)
         else:
-            raise KeyError('Object has no "items" Collection')
+            raise KeyError('Object has no "items" Collection. Are you trying to self.append in the get_html of a Shark Object? Use the renderer instead.')
 
     def find_id(self, id):
         if self.id == id:
@@ -221,8 +238,15 @@ class BaseObject(object):
     def serialize(self):
         return {'class_name': self.__class__.__name__, 'id': self.id}
 
-    def __eq__(self, other):
-        return True if (isinstance(other, BaseObject) and self.render() == other.render()) else False
+    def __add__(self, other):
+        obj = objectify(other)
+        if not obj:
+            return self
+        elif isinstance(obj, BaseObject):
+            return Collection([self, obj])
+        elif isinstance(obj, Collection):
+            obj.insert(0, self)
+            return obj
 
     def replace_with(self, new_object):
         pass # For code completion
@@ -237,24 +261,37 @@ class BaseObject(object):
         return None
 
 
+def objectify(obj):
+    if isinstance(obj, (BaseObject, Collection)):
+        return obj
+    elif not obj:
+        return None
+    elif isinstance(obj, str):
+        return Text(obj)
+    elif isinstance(obj, Iterable):
+        return Collection(obj)
+    else:
+        raise TypeError('Cannot cast to Shark Object')
+
+
 class PlaceholderWebObject(object):
     def __init__(self, handler, id, class_name):
         self.handler = handler
         self.id = id
         self.class_name = class_name
+        self.variables = {}
+        self.jqs = []
 
-    def replace_with(self, new_object):
-        new_object.id = self.id
-        html = new_object.render('')
+    def add_variable(self, web_object):
+        name = self.id.lower() + '_' + str(len(self.variables) + 1)
+        self.variables[name] = web_object
+        return name
 
-        self.handler.data[self.id] = html
-        #TODO: Use proper JQuery
-        self.handler.add_javascript('$("#' + self.id + '")[0].outerHTML = data.data.' + self.id + ';')
-        # self.handler.add_javascript(javascript)
-
-    def refresh(self):
-        self.handler.add_javascript(globals()[self.class_name](id=self.id).refresh())
-
+    @property
+    def jq(self):
+        jq = JQ("$('#{}')".format(self.id), self)
+        self.jqs.append(jq)
+        return jq
 
 
 class Renderer:
@@ -264,6 +301,7 @@ class Renderer:
         self._css = []
         self._css_classes = {}
         self._js = []
+        self._rendering_js_to = self._js
         self.indent = 0
         self.handler = handler
         self.translate_inline_styles_to_classes = True
@@ -297,10 +335,20 @@ class Renderer:
         js = js.strip()
         if not js.endswith(';'):
             js += ';'
-        self._js.append(js)
+        self._rendering_js_to.append(js)
+
+    def render_variables(self, variables):
+        while variables:
+            name, obj = variables.popitem()
+            html, js = self.render_string_and_js(obj)
+            self.append_js('var {} = {};'.format(name, json.dumps(html)))
+            self.append_js('function func_{}(){{{}}};'.format(name, js))
 
     def render(self, indent, web_object):
         if web_object:
+            if 'variables' in dir(web_object):
+                self.render_variables(web_object.variables)
+
             if isinstance(web_object, str):
                 web_object = Text(web_object)
             if not isinstance(web_object, BaseObject) and not isinstance(web_object, Collection):
@@ -345,6 +393,18 @@ class Renderer:
         self._rendering_to = original
         return html
 
+    def render_string_and_js(self, web_object):
+        original = self._rendering_to
+        original_js = self._rendering_js_to
+        self._rendering_to = []
+        self._rendering_js_to = []
+        self.render('', web_object)
+        html = self.html
+        js = self.js
+        self._rendering_to = original
+        self._rendering_js_to = original_js
+        return html, js
+
     def add_resource(self, url, type, module, name=''):
         self.resources.add_resource(url, type, module, name)
 
@@ -362,7 +422,7 @@ class Renderer:
 
     @property
     def js(self):
-        return '\r\n'.join(self._js)
+        return '\r\n'.join(self._rendering_js_to)
 
     @property
     def css_files(self):
@@ -404,12 +464,17 @@ class Collection(list):
             if obj:
                 if isinstance(obj, str):
                     obj = Text(obj)
+                if isinstance(obj, Iterable):
+                    obj = Collection(obj)
 
                 super(Collection, self).append(obj)
                 obj.parent = self
 
     def get_html(self, html):
         for web_object in self:
+            if 'variables' in dir(web_object):
+                html.render_variables(web_object.variables)
+
             if web_object is not None:
                 if isinstance(web_object, BaseObject) or isinstance(web_object, Collection):
                     try:
@@ -417,6 +482,7 @@ class Collection(list):
                             web_object.add_class(html.add_css_class(web_object.style))
                             web_object.style = ''
                         web_object.get_html(html)
+
                     except Exception as e:
                         print('Object:', web_object, web_object.__class__.__name__)
                         raise e
@@ -461,6 +527,13 @@ class Collection(list):
                 return result
 
         return None
+
+    def __add__(self, other):
+        obj = objectify(other)
+        if not obj:
+            return self
+        else:
+            return Collection(self, obj)
 
 
 class Raw(BaseObject):

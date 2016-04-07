@@ -18,6 +18,7 @@ from django.utils.timezone import now
 from django.views.static import serve
 
 from shark import models
+from shark.actions import JS
 from shark.analytics import GoogleAnalyticsTracking
 from shark.common import listify
 from shark.layout import Div, Spacer, Row
@@ -139,6 +140,7 @@ class BasePageHandler(BaseHandler):
             if variable_name not in self.ignored_variables:
                 variable = self.__getattribute__(variable_name)
                 if isinstance(variable, BaseObject):
+                    variable.id_needed = True
                     keep_variables[variable_name] = variable.serialize()
 
         renderer = Renderer(self)
@@ -205,17 +207,17 @@ class BasePageHandler(BaseHandler):
         elif request.method == 'POST':
             action = self.request.POST.get('action', '')
             keep_variables = json.loads(self.request.POST.get('keep_variables', '{}'))
+            keep_variable_objects = []
             for variable_name in keep_variables:
-                self.__setattr__(variable_name,
-                                 PlaceholderWebObject(
-                                     self,
-                                     keep_variables[variable_name]['id'],
-                                     keep_variables[variable_name]['class_name']
-                                 )
+                placeholder = PlaceholderWebObject(
+                    self,
+                    keep_variables[variable_name]['id'],
+                    keep_variables[variable_name]['class_name']
                 )
-            self.html = ''
-            self.javascript = ''
-            self.data = {}
+                keep_variable_objects.append(placeholder)
+
+                self.__setattr__(variable_name, placeholder)
+
             arguments = {}
             for argument in self.request.POST:
                 if argument == 'identifier':
@@ -226,10 +228,21 @@ class BasePageHandler(BaseHandler):
             if action:
                 self.__getattribute__(action)(*args, **arguments)
 
-            self.html += self.items.render('')
-            data = {'javascript': self.javascript,
-                    'html': self.html,
-                    'data': self.data}
+            javascript = []
+
+            renderer = Renderer()
+
+            for obj in keep_variable_objects:
+                renderer.render_variables(obj.variables)
+
+            javascript.append(renderer.js)
+
+            for obj in keep_variable_objects:
+                javascript.extend([jq.js for jq in obj.jqs])
+
+            data = {'javascript': ''.join(javascript),
+                    'html': '',
+                    'data': ''}
             json_data = json.dumps(data)
 
             return HttpResponse(json_data)
@@ -284,7 +297,7 @@ class BasePageHandler(BaseHandler):
         return text.content
 
     def replace_resource_js(self, resource):
-        return '$("#resource-{}-{}").href("{}");'.format(resource.module, resource.name, resource.url)
+        return JS('$("#resource-{}-{}").attr("href", "{}");'.format(resource.module, resource.name, resource.url))
 
     def _save_term(self, name, content):
         if self.user.is_superuser:

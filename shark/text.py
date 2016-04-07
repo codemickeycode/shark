@@ -103,9 +103,9 @@ class Heading(BaseObject):
 
 
 class Small(BaseObject):
-    def __init__(self, text=Default, **kwargs):
+    def __init__(self, text=None, **kwargs):
         self.init(kwargs)
-        self.text = self.param(text, 'Collection', 'Small text', Collection())
+        self.text = self.param(text, 'Collection', 'Small text')
 
     def get_html(self, html):
         html.append('<small' + self.base_attributes + '>')

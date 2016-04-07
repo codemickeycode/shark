@@ -50,7 +50,7 @@ class Image(BaseObject):
     """
     def __init__(self, src='', alt='', responsive=True, shape=ImageShape.default, data_src='', **kwargs):
         self.init(kwargs)
-        self.src = self.param(src, 'url', 'Src (Url) of the image')
+        self._src = self.param(src, 'url', 'Src (Url) of the image')
         self.alt = self.param(alt, 'string', 'Alt for image')
         self.responsive = self.param(responsive, 'responsive', 'Src (Url) of the image', '')
         self.shape = self.param(shape, 'ImageShape', 'indicates the shape of the image')
@@ -61,12 +61,15 @@ class Image(BaseObject):
     def get_html(self, html):
         if self.responsive:
             self.add_class('img-responsive')
-        if self.src:
-            src = 'src="{}"'.format(self.src)
+        if self._src:
+            src = 'src="{}"'.format(self._src)
         elif self.data_src:
             src = 'data-src="{}"'.format(self.data_src)
 
         html.append('<img {}'.format(src) + ' alt="{}"'.format(self.alt) + self.base_attributes + '/>')
+
+    def src(self, src):
+        return self.jq.attr('src', src)
 
     @classmethod
     def example(self):
@@ -366,4 +369,37 @@ class Parallax(BaseObject):
         html.append('</section>')
 
         html.append_js("var scroll = $('#" + self.id + "'); $(window).scroll(function() {scroll.css({ backgroundPosition: '50% ' + (-($(window).scrollTop() / " + str(self.speed) + ")) + 'px' })});")
+
+
+class Feature(BaseObject):
+    def __init__(self, heading=None, explanation=None, demonstration=None, flipped=False, **kwargs):
+        self.init(kwargs)
+        self.heading = self.param(heading, 'Collection', 'Heading for the feature')
+        self.explanation = self.param(explanation, 'Collection', 'Explanation of the feature')
+        self.demonstration = self.param(demonstration, 'Collection', 'Something do demonstrate the feature, such as an image')
+        self.flipped = self.param(flipped, 'boolean', 'Flip the explanation and demonstation. It looks good to alternate between features.')
+
+    def get_html(self, html):
+        def explanation():
+            html.append('        <hr class="{}">'.format(html.add_css_class('float: left;width: 200px;border-top: 3px solid #e7e7e7;')))
+            html.append('        <div class="clearfix"></div>')
+            html.append('        <h2>')
+            html.render('            ', self.heading)
+            html.append('        </h2>')
+            html.append('        <p class="lead">')
+            html.render('            ', self.explanation)
+            html.append('        </p>')
+
+        def demonstration():
+            html.render('        ', self.demonstration)
+
+
+        html.append('<div class="row">')
+        html.append('    <div class="col-lg-5 col-sm-6">')
+        demonstration() if self.flipped else explanation()
+        html.append('    </div>')
+        html.append('    <div class="col-lg-5 col-lg-offset-2 col-sm-6">')
+        explanation() if self.flipped else demonstration()
+        html.append('    </div>')
+        html.append('</div>')
 

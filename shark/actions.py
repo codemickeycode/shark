@@ -1,4 +1,5 @@
 import json
+from inspect import isfunction, ismethod
 
 from django.utils.html import escape
 from django.utils.http import urlquote
@@ -55,7 +56,7 @@ class BaseAction:
         if self.url:
             return ' href="{}"'.format(self.url)
         elif self.js:
-            return ' onclick="{}"'.format(self.js)
+            return ' onclick="{}"'.format(self.js.replace('"', '&quot;'))
         return ''
 
     @property
@@ -63,12 +64,12 @@ class BaseAction:
         """
         Attribute to add to an HTML element that doesn't support href. onclick is used
         """
-        return ' onclick="{}"'.format(self.js)
+        return ' onclick="{}"'.format(self.js.replace('"', '&quot;'))
 
 
 class URL(BaseAction):
     def __init__(self, url):
-        self._url = urlquote(url) if url else ''
+        self._url = urlquote(url, ':/@') if url else ''
 
     @property
     def url(self):
@@ -112,20 +113,65 @@ class NoAction(BaseAction):
 
 
 class JQ(object):
-    def __init__(self, js, obj=None):
-        self.js = js
+    def __init__(self, obj_js, obj):
+        self._js_pre = ''
+        self._js_post = ''
+        self.obj_js = obj_js
         self.obj = obj
 
+    def __getattr__(self, item):
+        if self.obj:
+            func = self.obj.__getattribute__(item)
+            if ismethod(func):
+                return lambda *args, **kwargs: self + func(*args, **kwargs)
+
+        raise KeyError(item)
+
+    def __add__(self, other):
+        if isinstance(other, JQ):
+            other._js_pre = self._js_pre + other._js_pre
+            other._js_post = self._js_post + other._js_post
+            return other
+        elif isinstance(other, str):
+            self._js_pre += other
+            return self
+        elif not other:
+            return self
+        else:
+            raise TypeError('Cannot concatenate JQ object {} with {}'.format(self, other.__class__.__name__))
+
     def show(self):
-        return JQ(self.js + '.show()', self.obj)
+        self._js_pre += '{}.show();'.format(self.obj_js)
+        return self
 
     def hide(self):
-        return JQ(self.js + '.hide()', self.obj)
+        self._js_pre += '{}.hide();'.format(self.obj_js)
+        return self
 
     def fadeIn(self):
-        return JQ(self.js + '.fadeIn()', self.obj)
+        self._js_pre += '{}.fadeIn(400, function(){{'.format(self.obj_js)
+        self._js_post += '});'
+        return self
 
     def fadeOut(self):
-        return JQ(self.js + '.fadeOut()', self.obj)
+        self._js_pre += '{}.fadeOut(400, function(){{'.format(self.obj_js)
+        self._js_post += '});'
+        return self
 
+    def animate(self, **kwargs):
+        self._js_pre += '{}.animate({}, function(){{'.format(self.obj_js, json.dumps(kwargs))
+        self._js_post += '});'
+        return self
 
+    def attr(self, attr, value):
+        self._js_pre += '{}.attr("{}", {});'.format(self.obj_js, attr, json.dumps(value))
+        return self
+
+    def html(self, content):
+        variable = self.obj.add_variable(content)
+        self._js_pre += '{}.html({});func_{}();'.format(self.obj_js, variable, variable)
+        return self
+
+    @property
+    def js(self):
+        return self._js_pre + self._js_post
