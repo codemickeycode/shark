@@ -1,3 +1,5 @@
+from collections import Iterable
+
 from .base import BaseObject, Default, Collection, Enumeration
 from .resources import Resources, Resource
 
@@ -293,7 +295,10 @@ def multiple_panel_row(*content_collections):
     return row
 
 
-def multiple_div_row(*content_collections, **kwargs):
+def multiple_div_row(*content_collections, support_iterable=True, **kwargs):
+    if support_iterable and len(content_collections)==1 and not isinstance(content_collections, str) and isinstance(content_collections, Iterable):
+        content_collections = content_collections[0]
+
     if len(content_collections) == 1:
         div_classes = "col-md-12 col-sm-12"
     elif len(content_collections) == 2:
