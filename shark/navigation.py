@@ -18,6 +18,15 @@ class NavBar(BaseObject):
         self.right_items = self.param(right_items, 'Collection', 'Items on the right side of the navbar', Collection())
 
     def get_html(self, html):
+        if self.position == NavBarPosition.fixed_top:
+            self.id_needed = True
+            html.append_js("$(window).resize(function () {$('body').css('padding-top', parseInt($('#" + self.id + "').css('height')))});")
+            html.append_js("$('body').css('padding-top', parseInt($('#" + self.id + "').css('height')));")
+        elif self.position == NavBarPosition.fixed_bottom:
+            self.id_needed = True
+            html.append_js("$(window).resize(function () {$('body').css('padding-bottom', parseInt($('#" + self.id + "').css('height')))});")
+            html.append_js("$('body').css('padding-bottom', parseInt($('#" + self.id + "').css('height')));")
+
         html.append(u'<nav' + self.base_attributes + u' class="navbar navbar-default navbar-{}">'.format(NavBarPosition.name(self.position).replace('_', '-')))
         html.append(u'    <div class="container-fluid">')
         html.append(u'        <div class="navbar-header">')
@@ -43,43 +52,6 @@ class NavBar(BaseObject):
         html.append(u'        </div>')
         html.append(u'    </div>')
         html.append(u'</nav>')
-
-        if self.position == NavBarPosition.fixed_top:
-            html.append_css('body { margin-top: 60px; }')
-        elif self.position == NavBarPosition.fixed_bottom:
-            html.append_css('body { margin-bottom: 60px; }')
-
-    def get_amp_html(self, html):
-        html.append(u'<nav' + self.base_attributes + u' class="navbar navbar-default navbar-{}">'.format(NavBarPosition.name(self.position).replace('_', '-')))
-        html.append(u'    <div class="container-fluid">')
-        html.append(u'        <div class="navbar-header">')
-        html.append(u'            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#{}_items" aria-expanded="false">'.format(self.id))
-        html.append(u'                <span class="sr-only">Toggle navigation</span>')
-        html.append(u'                <span class="icon-bar"></span>')
-        html.append(u'                <span class="icon-bar"></span>')
-        html.append(u'                <span class="icon-bar"></span>')
-        html.append(u'            </button>')
-        html.render(u'            ', self.brand)
-        html.append(u'        </div>')
-        html.append(u'')
-        html.append(u'        <div class="collapse navbar-collapse" id="{}_items">'.format(self.id))
-        if self.items:
-            html.append(u'            <ul class="nav navbar-nav">')
-            html.render(u'                ', self.items)
-            html.append(u'            </ul>')
-        html.render(u'            ', self.search)
-        if self.right_items:
-            html.append(u'            <ul class="nav navbar-nav navbar-right">')
-            html.render(u'                ', self.right_items)
-            html.append(u'            </ul>')
-        html.append(u'        </div>')
-        html.append(u'    </div>')
-        html.append(u'</nav>')
-
-        if self.position == NavBarPosition.fixed_top:
-            html.append_css('body { margin-top: 60px; }')
-        elif self.position == NavBarPosition.fixed_bottom:
-            html.append_css('body { margin-bottom: 60px; }')
 
     @classmethod
     def example(self):

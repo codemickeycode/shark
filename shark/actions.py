@@ -1,5 +1,5 @@
 import json
-from inspect import isfunction, ismethod
+from inspect import ismethod
 
 from django.utils.html import escape
 from django.utils.http import urlquote
@@ -113,11 +113,12 @@ class NoAction(BaseAction):
 
 
 class JQ(object):
-    def __init__(self, obj_js, obj):
+    def __init__(self, obj_js, obj=None, renderer=None):
         self._js_pre = ''
         self._js_post = ''
         self.obj_js = obj_js
         self.obj = obj
+        self.renderer = renderer
 
     def __getattr__(self, item):
         if self.obj:
@@ -168,8 +169,21 @@ class JQ(object):
         return self
 
     def html(self, content):
-        variable = self.obj.add_variable(content)
+        if self.obj:
+            variable = self.obj.add_variable(content)
+        else:
+            variable = self.renderer.add_variable(content)
         self._js_pre += '{}.html({});func_{}();'.format(self.obj_js, variable, variable)
+        return self
+
+    def append_raw(self, content):
+        self._js_pre += '{}.append({});'.format(self.obj_js, json.dumps(content))
+        return self
+
+    def replace_resource(self, resource):
+        id = "#resource-{}-{}".format(resource.resource.module, resource.name)
+        self._js_pre += '$("#{}").remove();'.format('id')
+        self._js_pre += '$("head").append("<link id=\'{}\' rel=\'stylesheet\' href=\'{}\' type=\'text/css\' />");'.format(id, resource.url)
         return self
 
     @property

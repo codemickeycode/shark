@@ -22,6 +22,13 @@ def chunks(l, n):
         yield l[i:i+n]
 
 
+def attr(name, value):
+    if value:
+        return ' {}="{}"'.format(name, value)
+    else:
+        return ''
+
+
 def listify(obj):
     """
     Turn anything that isn't iterable into a list, except str. None or '' become an empty list [], objects will become a single item list.

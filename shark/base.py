@@ -54,6 +54,7 @@ class BaseObject(object):
 
     def init(self, kwargs):
         self.__class__.object_number += 1
+        self.obj_nr = self.__class__.object_number
         self.id = kwargs.get('id', self.__class__.__name__ + '_' + str(self.__class__.object_number))
         self.id_needed = 'id' in kwargs
         self.auto_id = 'id' not in kwargs
@@ -77,10 +78,10 @@ class BaseObject(object):
 
     def add_variable(self, web_object):
         name = self.id.lower() + '_' + str(len(self.variables) + 1)
-        self.variables[name] = web_object
+        self.variables[name] = objectify(web_object)
         return name
 
-    def param(self, value, type, description, default=None):
+    def param(self, value, type, description='', default=None):
         if value == Default:
             value = default
             if value == Default:
@@ -145,7 +146,8 @@ class BaseObject(object):
                 value = value.text
             value = Markdown(value)
         elif type == 'int':
-            value = int(value)
+            if value is not None:
+                value = int(value)
         elif type == 'Collection':
             if value is None:
                 value = Collection()
@@ -205,9 +207,11 @@ class BaseObject(object):
                 self.classes = (self.classes + ' ' + class_name)
 
     def add_attribute(self, attribute, value):
-        if value:
-            #TODO: check that value is safe
-            self.extra_attributes = (self.extra_attributes + ' ' + attribute + '="' + str(value) + '"')
+        if value is not None:
+            self.extra_attributes = (self.extra_attributes + ' ' + attribute + '="' + escape(str(value)) + '"')
+        else:
+            self.extra_attributes = (self.extra_attributes + ' ' + attribute)
+
 
     def render(self, handler=None, indent=0):
         html = Renderer(handler=handler, indent=indent)
@@ -284,7 +288,7 @@ class PlaceholderWebObject(object):
 
     def add_variable(self, web_object):
         name = self.id.lower() + '_' + str(len(self.variables) + 1)
-        self.variables[name] = web_object
+        self.variables[name] = objectify(web_object)
         return name
 
     @property
@@ -295,7 +299,11 @@ class PlaceholderWebObject(object):
 
 
 class Renderer:
+    object_number = 0
+
     def __init__(self, handler=None, amp=False, inline_style_class_base='style_'):
+        self.__class__.object_number += 1
+        self.id = self.__class__.__name__ + '_' + str(self.__class__.object_number)
         self._html = []
         self._rendering_to = self._html
         self._css = []
@@ -307,6 +315,8 @@ class Renderer:
         self.translate_inline_styles_to_classes = True
         self.inline_style_class_base = inline_style_class_base
         self.resources = Resources()
+        self.parents = []
+        self.variables = {}
 
         if handler:
             self.edit_mode = handler.edit_mode
@@ -337,6 +347,11 @@ class Renderer:
             js += ';'
         self._rendering_js_to.append(js)
 
+    def add_variable(self, web_object):
+        name = self.id.lower() + '_' + str(len(self.variables) + 1)
+        self.variables[name] = objectify(web_object)
+        return name
+
     def render_variables(self, variables):
         while variables:
             name, obj = variables.popitem()
@@ -345,7 +360,11 @@ class Renderer:
             self.append_js('function func_{}(){{{}}};'.format(name, js))
 
     def render(self, indent, web_object):
+        self.render_variables(self.variables)
+
         if web_object:
+            if web_object.parent and isinstance(web_object.parent, BaseObject):
+                self.parents.insert(0, web_object.parent)
             if 'variables' in dir(web_object):
                 self.render_variables(web_object.variables)
 
@@ -363,6 +382,9 @@ class Renderer:
                 self.indent -= len(indent)
             else:
                 web_object.get_amp_html(self)
+
+            if web_object.parent and isinstance(web_object.parent, BaseObject):
+                self.parents.pop(0)
 
     def inline_render(self, web_object):
         if self.separator and len(self._rendering_to) and self._rendering_to[-1].endswith(self.separator):
@@ -405,6 +427,12 @@ class Renderer:
         self._rendering_js_to = original_js
         return html, js
 
+    def find_parent(self, type):
+        for parent in self.parents:
+            if isinstance(parent, type):
+                return parent
+        raise KeyError('Cannot find {} in parents.'.format(type.__name__))
+
     def add_resource(self, url, type, module, name=''):
         self.resources.add_resource(url, type, module, name)
 
@@ -443,6 +471,7 @@ class Renderer:
 
 class Collection(list):
     def __init__(self, *args, **kwargs):
+        from shark.forms import SharkFieldDefinition
         if len(args)>1:
             args = [args]
         super(Collection, self).__init__(*args, **kwargs)
@@ -453,6 +482,9 @@ class Collection(list):
             elif isinstance(item, Iterable) and not isinstance(item, BaseObject) and not isinstance(item, Collection):
                 self.pop(i)
                 self.insert(i, Collection(item))
+            elif isinstance(item, SharkFieldDefinition):
+                self.pop(i)
+                self.insert(i, item.default_object(item.name))
             if isinstance(item, BaseObject):
                 item.parent = self
 
@@ -471,6 +503,8 @@ class Collection(list):
                 obj.parent = self
 
     def get_html(self, html):
+        if self.parent and isinstance(self.parent, BaseObject):
+            html.parents.insert(0, self.parent)
         for web_object in self:
             if 'variables' in dir(web_object):
                 html.render_variables(web_object.variables)
@@ -488,6 +522,9 @@ class Collection(list):
                         raise e
                 else:
                     raise TypeError("You're trying to render something that's not a Shark Object. Received {} of class {}.".format(web_object, web_object.__class__.__name__))
+
+        if self.parent and isinstance(self.parent, BaseObject):
+            html.parents.pop(0)
 
     def get_amp_html(self, html):
         for web_object in self:
@@ -558,6 +595,7 @@ class Raw(BaseObject):
     def example(self):
         return Raw('<b>Hello world!</b>')
 
+
 class Text(BaseObject):
     """
     Just plain text.
@@ -588,6 +626,14 @@ class Text(BaseObject):
     @classmethod
     def example(self):
         return Text('Hello world!')
+
+
+class Script(BaseObject):
+    def __init__(self, script=None, **kwargs):
+        self.script = self.param(script, 'JQ', 'JQuery to execute')
+
+    def get_html(self, html):
+        html.append_js(self.script.onclick)
 
 
 # class ContextItemPattern(Pattern):

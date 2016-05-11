@@ -8,6 +8,8 @@ import markdown
 from collections import Iterable
 import json
 
+import re
+from django.core import signing
 from django.core.urlresolvers import reverse, get_resolver, RegexURLResolver, RegexURLPattern, NoReverseMatch
 from django.http import Http404, HttpResponse, HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.shortcuts import render
@@ -18,9 +20,10 @@ from django.utils.timezone import now
 from django.views.static import serve
 
 from shark import models
-from shark.actions import JS
+from shark.actions import JS, JQ, BaseAction
 from shark.analytics import GoogleAnalyticsTracking
 from shark.common import listify
+from shark.forms import *
 from shark.layout import Div, Spacer, Row
 from shark.models import EditableText, StaticPage as StaticPageModel
 from shark.navigation import NavLink
@@ -117,7 +120,7 @@ class BasePageHandler(BaseHandler):
         self.main = None
         self.footer = None
 
-        self.identifier = None
+        self.javascript = ''
 
         self.edit_mode = False
 
@@ -220,22 +223,20 @@ class BasePageHandler(BaseHandler):
 
             arguments = {}
             for argument in self.request.POST:
-                if argument == 'identifier':
-                    self.__setattr__(argument, self.request.POST[argument])
-                elif argument not in ['action', 'keep_variables', 'csrfmiddlewaretoken']:
+                if argument not in ['action', 'keep_variables', 'csrfmiddlewaretoken']:
                     arguments[argument] = self.request.POST[argument]
+
+            self.renderer = Renderer()
 
             if action:
                 self.__getattribute__(action)(*args, **arguments)
 
-            javascript = []
-
-            renderer = Renderer()
+            javascript = [self.javascript]
 
             for obj in keep_variable_objects:
-                renderer.render_variables(obj.variables)
+                self.renderer.render_variables(obj.variables)
 
-            javascript.append(renderer.js)
+            javascript.append(self.renderer.js)
 
             for obj in keep_variable_objects:
                 javascript.extend([jq.js for jq in obj.jqs])
@@ -274,7 +275,12 @@ class BasePageHandler(BaseHandler):
         self.append(Row(Div(args, classes='col-md-12'), **kwargs))
 
     def add_javascript(self, script):
-        self.javascript = self.javascript + script
+        if isinstance(script, BaseAction):
+            self.javascript += script.js
+        elif isinstance(script, JQ):
+            self.javascript += script.js
+        else:
+            self.javascript = self.javascript + script
 
     def render_page(self):
         raise NotImplementedError
@@ -297,13 +303,50 @@ class BasePageHandler(BaseHandler):
         return text.content
 
     def replace_resource_js(self, resource):
-        return JS('$("#resource-{}-{}").attr("href", "{}");'.format(resource.module, resource.name, resource.url))
+        return JS('$("#resource-{}-{}").attr("href", "{}").on("load", function(){{$(window).resize()}});'.format(resource.module, resource.name, resource.url))
 
     def _save_term(self, name, content):
         if self.user.is_superuser:
             text = EditableText.load(name)
             text.content = content
             text.save()
+
+    def _handle_form_post(self, *args, post_action='', form_data='', **kwargs):
+        form_data = {item.split('=', 1)[0]: item.split('=', 1)[1] for item in signing.loads(form_data).split('|')}
+        form_id = form_data['formid']
+        form_class_description = form_data['form']
+        form_class_name = re.match('(.*)\((.*)\)', form_class_description).group(1)
+        form_class_params = re.match('(.*)\((.*)\)', form_class_description).group(2)
+        form_error_class = form_data['formerror']
+
+        form = SharkForm.sub_classes[form_class_name]()
+        form.deserialize(form_class_params)
+        formerror = FormError.sub_classes[form_error_class](form_id)
+        form.setup_post(kwargs)
+
+        form._validate()
+        if not form.errors:
+            if post_action:
+                self.__getattribute__(post_action)(*args, form)
+            else:
+                form.save()
+        else:
+            renderer = Renderer()
+            for error in form.errors:
+                error_object = formerror
+                if error.field and ('fld-' + error.field.full_name) in form_data:
+                    error_object = FieldError.sub_classes[form_data['fld-' + error.field.full_name]](error.field.full_name)
+
+                if error_object:
+                    selector = "$('#{} .{}')".format(form_id, error_object.html_class_name)
+                    error_renderer = Renderer()
+                    error_object._render_error(error_renderer, error.message)
+                    self.javascript += JQ(selector, renderer=renderer).append_raw(error_renderer.html).js
+                    self.javascript += error_renderer.js
+                print(error.field, error.message)
+
+            renderer.render('', None)
+            self.javascript = renderer.js + self.javascript
 
 
 def exists_or_404(value):

@@ -13,9 +13,9 @@ function send_action(post_data) {
 }
 
 function do_action(action, post_data) {
-    post_data.action = action;
     post_data.csrfmiddlewaretoken = csrf_token;
     post_data.keep_variables = keep_variables;
+    post_data.action = action;
     send_action(post_data);
 }
 
@@ -52,7 +52,9 @@ function bind_forms() {
     });
 
     $('form[data-async]').each(function() {
-        $('<input type="hidden" name="keep_variables">').attr('value', keep_variables).appendTo(this)
+        $('<input type="hidden" name="keep_variables">').attr('value', keep_variables).appendTo(this);
+        $('<input type="hidden" name="csrfmiddlewaretoken">').attr('value', csrf_token).appendTo(this)
+        $(this).removeAttr('data-async')
     })
 }
 
@@ -62,5 +64,6 @@ $(document).ready(function() {
         $(this).find("[data-autofocus]:first").focus();
     });
 
+    $("[data-autofocus]:first").focus();
     bind_forms();
 });
