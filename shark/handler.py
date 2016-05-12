@@ -124,10 +124,13 @@ class BasePageHandler(BaseHandler):
 
         self.edit_mode = False
 
+        print('Handler created', now())
+
     def init(self):
         pass
 
     def output_html(self, args, kwargs):
+        print('Start output HTML', now())
         content = Collection()
         content.append(self.modals)
         content.append(self.nav)
@@ -163,6 +166,7 @@ class BasePageHandler(BaseHandler):
                                   'amp_url': self.request.build_absolute_uri(self.amp_url(*args, **kwargs)) if self.enable_amp else None
         })
 
+        print('End output HTML', now())
         return html
 
     def output_amp_html(self, args, kwargs):
