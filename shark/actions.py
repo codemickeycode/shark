@@ -68,8 +68,14 @@ class BaseAction:
 
 
 class URL(BaseAction):
-    def __init__(self, url):
-        self._url = urlquote(url, ':/@') if url else ''
+    def __init__(self, url, quote=True):
+        if url:
+            if quote:
+                self._url = urlquote(url, ':/@')
+            else:
+                self._url = url
+        else:
+            self._url = ''
 
     @property
     def url(self):

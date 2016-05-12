@@ -20,7 +20,7 @@ from django.utils.timezone import now
 from django.views.static import serve
 
 from shark import models
-from shark.actions import JS, JQ, BaseAction
+from shark.actions import JS, JQ, BaseAction, URL
 from shark.analytics import GoogleAnalyticsTracking
 from shark.common import listify
 from shark.forms import *
@@ -59,7 +59,7 @@ class BaseHandler:
 
     @classmethod
     def url(cls, *args, **kwargs):
-        return reverse('shark:' + cls.get_unique_name(), args=args, kwargs=kwargs, current_app='shark')
+        return URL(reverse('shark:' + cls.get_unique_name(), args=args, kwargs=kwargs, current_app='shark'), False)
 
     @classmethod
     def amp_url(cls, *args, **kwargs):
@@ -441,7 +441,7 @@ class StaticPage(BasePageHandler):
 
     @classmethod
     def url(cls, *args, **kwargs):
-        return reverse('shark:shark_static_page', args=args, kwargs=kwargs)
+        return URL(reverse('shark:shark_static_page', args=args, kwargs=kwargs), False)
 
     @classmethod
     def amp_url(cls, *args, **kwargs):
@@ -503,8 +503,6 @@ class SiteMap(BaseHandler):
                                 if isinstance(args, str) or not isinstance(args, Iterable):
                                     args=[args]
                                 urls.add(handler.url(*args))
-                                if handler.enable_amp:
-                                    urls.add(handler.amp_url(*args))
 
         add_patterns(get_resolver().url_patterns)
 
@@ -516,7 +514,7 @@ class SiteMap(BaseHandler):
         lines.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
         handlers = set()
         for url in self.get_urls():
-            lines.append('    <url><loc>{}</loc></url>'.format(request.build_absolute_uri(url)))
+            lines.append('    <url><loc>{}</loc></url>'.format(request.build_absolute_uri(url.url)))
 
         lines.append('</urlset>')
         return HttpResponse('\r\n'.join(lines))
