@@ -57,9 +57,10 @@ class Row(BaseObject):
     def __init__(self, items=Default,  **kwargs):
         self.init(kwargs)
         self.items = self.param(items, 'Collection', 'Items in the row', Collection())
+        self.add_class('row')
 
     def get_html(self, html):
-        html.append('<div id="' + self.id + '" ' + ('class="row '+self.classes+'">' if self.classes else 'class="row">'))
+        html.append('<div' + self.base_attributes + '>')
         html.render('    ', self.items)
         html.append('</div>')
 

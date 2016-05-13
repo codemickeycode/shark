@@ -68,7 +68,7 @@ class BaseObject(object):
         if not self.id:
             self.__class__.object_number += 1
             self.obj_nr = self.__class__.object_number
-            self.id = '%s_%s' % self.__class__.__name__, self.obj_nr
+            self.id = '%s_%s' % (self.__class__.__name__, self.obj_nr)
 
     def param(self, value, type, description='', default=None):
         if value == Default:
@@ -325,15 +325,12 @@ class Renderer:
         # self.render_variables(self.variables)
 
         if web_object:
-            if isinstance(web_object, str):
-                web_object = Text(web_object)
-            if not isinstance(web_object, BaseObject) and not isinstance(web_object, Collection):
-                web_object = Collection(web_object)
-            if web_object.style:
-                if self.translate_inline_styles_to_classes:
-                    web_object.add_class(self.add_css_class(web_object.style))
-                    web_object.style = ''
             self.indent += len(indent)
+
+            if self.translate_inline_styles_to_classes and isinstance(web_object, BaseObject) and web_object.style:
+                web_object.add_class(self.add_css_class(web_object.style))
+                web_object.style = ''
+
             if web_object.parent and isinstance(web_object.parent, BaseObject):
                 self.parents.insert(0, web_object.parent)
                 web_object.get_html(self)
@@ -427,6 +424,8 @@ class Collection(list):
     def __init__(self, *args, **kwargs):
         if len(args)>1:
             args = [args]
+        elif len(args)==1:
+            args = args[0]
 
         fixed_args = []
         for arg in args:
@@ -437,7 +436,7 @@ class Collection(list):
             elif isinstance(arg, str):
                 arg = Text(arg)
             elif isinstance(arg, Iterable):
-                arg = Collection(*arg)
+                arg = Collection(arg)
             else:
                 arg = Text(str(arg))
 
@@ -463,22 +462,7 @@ class Collection(list):
         if self.parent and isinstance(self.parent, BaseObject):
             html.parents.insert(0, self.parent)
         for web_object in self:
-            if hasattr(web_object, 'variables'):
-                html.render_variables(web_object.variables)
-
-            if web_object is not None:
-                if isinstance(web_object, BaseObject) or isinstance(web_object, Collection):
-                    try:
-                        if web_object.style:
-                            web_object.add_class(html.add_css_class(web_object.style))
-                            web_object.style = ''
-                        web_object.get_html(html)
-
-                    except Exception as e:
-                        print('Object:', web_object, web_object.__class__.__name__)
-                        raise e
-                else:
-                    raise TypeError("You're trying to render something that's not a Shark Object. Received {} of class {}.".format(web_object, web_object.__class__.__name__))
+            html.render('', web_object)
 
         if self.parent and isinstance(self.parent, BaseObject):
             html.parents.pop(0)

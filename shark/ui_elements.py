@@ -87,6 +87,7 @@ class Thumbnail(BaseObject):
         self.height = self.param(height, 'css_attr', 'Image height')
         self.alt = self.param(alt, 'string', 'Alt text')
         self.items = self.param(items, 'Collection', 'Items under the image', Collection())
+        self.add_class('thumbnail')
 
     def get_html(self, html):
         style = ''
@@ -95,7 +96,7 @@ class Thumbnail(BaseObject):
         if self.height:
             style += u'height:' + str(self.height) + u';'
 
-        html.append(u'<div id="' + self.id + '" class="thumbnail">')
+        html.append(u'<div' + self.base_attributes + '>')
         html.append(u'    <img src="' + self.img_url + u'" alt="' + self.alt + '"' + (' style="' + style + '"' if style else '') + '>')
         html.append(u'    <div class="caption">')
         html.render(u'        ', self.items)
