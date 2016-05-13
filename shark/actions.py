@@ -175,10 +175,7 @@ class JQ(object):
         return self
 
     def html(self, content):
-        if self.obj:
-            variable = self.obj.add_variable(content)
-        else:
-            variable = self.renderer.add_variable(content)
+        variable = self.renderer.add_variable(content)
         self._js_pre += '{}.html({});func_{}();'.format(self.obj_js, variable, variable)
         return self
 

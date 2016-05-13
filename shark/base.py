@@ -58,7 +58,6 @@ class BaseObject(object):
         self.id = kwargs.get('id', self.__class__.__name__ + '_' + str(self.__class__.object_number))
         self.id_needed = 'id' in kwargs
         self.auto_id = 'id' not in kwargs
-        self.term = kwargs.get('term', None)
         self.classes = kwargs.get('classes', '')
         self.style = kwargs.get('style', '')
         self.tab_index = kwargs.get('tab_index', '')
@@ -70,16 +69,9 @@ class BaseObject(object):
 
         self.variables = {}
 
-        for kwarg in ['id', 'term', 'classes', 'style', 'tab_index', 'role', 'onclick']:
+        for kwarg in ['id', 'classes', 'style', 'tab_index', 'role', 'onclick']:
             if kwarg in kwargs:
                 del kwargs[kwarg]
-
-        self.edit_mode = False
-
-    def add_variable(self, web_object):
-        name = self.id.lower() + '_' + str(len(self.variables) + 1)
-        self.variables[name] = objectify(web_object)
-        return name
 
     def param(self, value, type, description='', default=None):
         if value == Default:
@@ -190,14 +182,16 @@ class BaseObject(object):
 
     @property
     def base_attributes(self):
-        #TODO: Escape these, esp onclick?
-        return iif(self.id and self.id_needed, ' id="' + self.id + '"', '') + \
-               iif(self.classes, ' class="' + self.classes + '"', '') + \
-               iif(self.style, ' style="' + self.style + '"', '') + \
-               iif(self.tab_index, ' tab-index=' + str(self.tab_index) + '', '') + \
-               iif(self.onclick, ' onclick="' + self.onclick + '"', '') + \
-               iif(self.role, ' role="' + self.role + '"', '') + \
-               self.extra_attributes
+        attributes = []
+        if self.id and self.id_needed:
+            attributes.append(' id="' + self.id + '"')
+        if self.classes:
+            attributes.append(' class="' + self.classes + '"')
+        if self.style:
+            attributes.append(' style="' + self.style + '"')
+        attributes.append(self.extra_attributes)
+
+        return ''.join(attributes)
 
     def add_class(self, class_names):
         new_classes = class_names.split()
@@ -223,20 +217,7 @@ class BaseObject(object):
 
         return html.output()
 
-    def render_amp(self, handler=None):
-        html = Renderer(handler=handler, amp=True)
-        try:
-            self.get_amp_html(html)
-        except AttributeError as e:
-            print(self)
-            raise e
-
-        return html.output()
-
     def get_html(self, html):
-        pass
-
-    def get_amp_html(self, html):
         pass
 
     def serialize(self):
@@ -286,11 +267,6 @@ class PlaceholderWebObject(object):
         self.variables = {}
         self.jqs = []
 
-    def add_variable(self, web_object):
-        name = self.id.lower() + '_' + str(len(self.variables) + 1)
-        self.variables[name] = objectify(web_object)
-        return name
-
     @property
     def jq(self):
         jq = JQ("$('#{}')".format(self.id), self)
@@ -301,7 +277,7 @@ class PlaceholderWebObject(object):
 class Renderer:
     object_number = 0
 
-    def __init__(self, handler=None, amp=False, inline_style_class_base='style_'):
+    def __init__(self, handler=None, inline_style_class_base='style_'):
         self.__class__.object_number += 1
         self.id = self.__class__.__name__ + '_' + str(self.__class__.object_number)
         self._html = []
@@ -319,14 +295,14 @@ class Renderer:
         self.variables = {}
 
         if handler:
-            self.edit_mode = handler.edit_mode
             self.text = handler.text
         else:
-            self.edit_mode = False
             self.text = ''
+
         self.separator = '\r\n'
         self.omit_next_indent = False
-        self.amp = amp
+
+        self.render_count = 0
 
     def add_css_class(self, css):
         if not css in self._css_classes:
@@ -360,14 +336,10 @@ class Renderer:
             self.append_js('function func_{}(){{{}}};'.format(name, js))
 
     def render(self, indent, web_object):
-        self.render_variables(self.variables)
+        self.render_count += 1
+        # self.render_variables(self.variables)
 
         if web_object:
-            if web_object.parent and isinstance(web_object.parent, BaseObject):
-                self.parents.insert(0, web_object.parent)
-            if 'variables' in dir(web_object):
-                self.render_variables(web_object.variables)
-
             if isinstance(web_object, str):
                 web_object = Text(web_object)
             if not isinstance(web_object, BaseObject) and not isinstance(web_object, Collection):
@@ -376,15 +348,15 @@ class Renderer:
                 if self.translate_inline_styles_to_classes:
                     web_object.add_class(self.add_css_class(web_object.style))
                     web_object.style = ''
-            if not self.amp:
-                self.indent += len(indent)
-                web_object.get_html(self)
-                self.indent -= len(indent)
-            else:
-                web_object.get_amp_html(self)
-
+            self.indent += len(indent)
             if web_object.parent and isinstance(web_object.parent, BaseObject):
+                self.parents.insert(0, web_object.parent)
+                web_object.get_html(self)
                 self.parents.pop(0)
+            else:
+                web_object.get_html(self)
+
+            self.indent -= len(indent)
 
     def inline_render(self, web_object):
         if self.separator and len(self._rendering_to) and self._rendering_to[-1].endswith(self.separator):
@@ -395,13 +367,10 @@ class Renderer:
 
             old_separator = self.separator
             self.separator = ''
-            if not self.amp:
-                old_indent = self.indent
-                self.indent = 0
-                web_object.get_html(self)
-                self.indent = old_indent
-            else:
-                web_object.get_amp_html(self)
+            old_indent = self.indent
+            self.indent = 0
+            web_object.get_html(self)
+            self.indent = old_indent
 
             self.separator = old_separator
 
@@ -506,7 +475,7 @@ class Collection(list):
         if self.parent and isinstance(self.parent, BaseObject):
             html.parents.insert(0, self.parent)
         for web_object in self:
-            if 'variables' in dir(web_object):
+            if hasattr(web_object, 'variables'):
                 html.render_variables(web_object.variables)
 
             if web_object is not None:
@@ -526,30 +495,9 @@ class Collection(list):
         if self.parent and isinstance(self.parent, BaseObject):
             html.parents.pop(0)
 
-    def get_amp_html(self, html):
-        for web_object in self:
-            if web_object is not None:
-                if isinstance(web_object, BaseObject) or isinstance(web_object, Collection):
-                    try:
-                        if web_object.style:
-                            web_object.add_class(html.add_css_class(web_object.style))
-                            web_object.style = ''
-                        web_object.get_amp_html(html)
-                    except Exception as e:
-                        print('AMP Object:', web_object, web_object.__class__.__name__)
-                        raise e
-                else:
-                    raise TypeError("AMP You're trying to render something that's not a Shark Object. Received {} of class {}.".format(web_object, web_object.__class__.__name__))
-
     def render(self, handler=None):
         renderer = Renderer(handler=handler)
         self.get_html(renderer)
-
-        return renderer
-
-    def render_amp(self, handler=None):
-        renderer = Renderer(handler=handler, amp=True)
-        self.get_amp_html(renderer)
 
         return renderer
 
@@ -585,9 +533,6 @@ class Raw(BaseObject):
     def get_html(self, html):
         html.append(self.text)
 
-    def get_amp_html(self, html):
-        html.append(self.text)
-
     def __str__(self):
         return self.text or ''
 
@@ -599,29 +544,13 @@ class Raw(BaseObject):
 class Text(BaseObject):
     """
     Just plain text.
-    If you want to make the text editable in the admin interface and on screen, just use the term keyword argument.
     """
     def __init__(self, text='', **kwargs):
         self.init(kwargs)
         self.text = self.param(text, 'string', 'The text')
 
     def get_html(self, html):
-        if not self.term:
-            if self.text is not None:
-                html.append(self.text)
-        elif html.edit_mode:
-            html.append('<span' + self.base_attributes + ' contenteditable="True" data-name="{}" onblur="content_changed(this);">'.format(self.id))
-            html.append(html.text(self.term, self.text) or '')
-            html.append('</span>')
-        else:
-            html.append(escape(html.text(self.term, self.text)) or '')
-
-    def get_amp_html(self, html):
-        if not self.term:
-            if self.text is not None:
-                html.append(self.text)
-        else:
-            html.append(escape(html.text(self.term, self.text)) or '')
+        html.append(self.text)
 
     @classmethod
     def example(self):
@@ -729,11 +658,6 @@ class Markdown(BaseObject):
                 raw = arg_name
             clean = re.sub(match.group(0), raw, clean)
 
-        html.append(clean)
-
-    def get_amp_html(self, html):
-        dirty = markdown(text=self.text, output_format='html5')
-        clean = bleach.clean(dirty, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES, styles=ALLOWED_STYLES)
         html.append(clean)
 
     @classmethod

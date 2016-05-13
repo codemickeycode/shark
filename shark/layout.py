@@ -63,11 +63,6 @@ class Row(BaseObject):
         html.render('    ', self.items)
         html.append('</div>')
 
-    def get_amp_html(self, html):
-        html.append('<div id="' + self.id + '" ' + ('class="row '+self.classes+'">' if self.classes else 'class="row">'))
-        html.render('    ', self.items)
-        html.append('</div>')
-
 
 class ParagraphStyle(Enumeration):
     left = 0
@@ -154,17 +149,6 @@ class Panel(BaseObject):
         html.append(u'    </div>')
         html.append(u'</div>')
 
-    def get_amp_html(self, html):
-        html.append(u'<div' + self.base_attributes+ '>')
-        if self.header:
-            html.append('    <div class="panel-heading">')
-            html.inline_render(self.header)
-            html.append('    </div>')
-        html.append(u'    <div class="panel-body">')
-        html.render(u'        ', self.items)
-        html.append(u'    </div>')
-        html.append(u'</div>')
-
     @classmethod
     def example(self):
         return Panel("This is a Panel.")
@@ -200,11 +184,6 @@ class Div(BaseObject):
     def get_html(self, html):
         html.append('<div' + self.base_attributes + '>')
         html.render('    ', self.items)
-        html.append('</div>')
-
-    def get_amp_html(self, html):
-        html.append('<div' + self.base_attributes + '>')
-        html.render('', self.items)
         html.append('</div>')
 
     @classmethod

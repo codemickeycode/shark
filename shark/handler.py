@@ -37,7 +37,6 @@ from .resources import Resources
 unique_name_counter = 0
 
 class BaseHandler:
-    enable_amp = False
     route = None
     redirects = None
 
@@ -62,10 +61,6 @@ class BaseHandler:
         return URL(reverse('shark:' + cls.get_unique_name(), args=args, kwargs=kwargs, current_app='shark'), False)
 
     @classmethod
-    def amp_url(cls, *args, **kwargs):
-        return reverse('shark:' + cls.get_unique_name() + '.amp', args=args, kwargs=kwargs, current_app='shark')
-
-    @classmethod
     def sitemap(cls):
         return True
 
@@ -84,17 +79,6 @@ class BaseHandler:
             return sitemap
 
         return []
-
-    @classmethod
-    def make_amp_route(cls, route):
-        new = route[:-1] if route.endswith('$') else route
-        if not len(new) or new[-1] in '^/':
-            new += 'amp'
-        else:
-            new += '.amp'
-        if route.endswith('$'):
-            new += '$'
-        return new
 
 
 class NotFound404(Exception):
@@ -122,8 +106,6 @@ class BasePageHandler(BaseHandler):
 
         self.javascript = ''
 
-        self.edit_mode = False
-
         print('Handler created', now())
 
     def init(self):
@@ -150,7 +132,9 @@ class BasePageHandler(BaseHandler):
                     keep_variables[variable_name] = variable.serialize()
 
         renderer = Renderer(self)
+        print('Start render', now())
         renderer.render('        ', content)
+        print('End render', now(), renderer.render_count)
 
         html = render(self.request, 'base.html', {
                                   'title': self.title,
@@ -162,45 +146,18 @@ class BasePageHandler(BaseHandler):
                                   'extra_js': '\r\n'.join(['        <script src="' + js_file + '"></script>' for js_file in renderer.js_files]),
                                   'javascript': renderer.js,
                                   'css': renderer.css,
-                                  'keep_variables': keep_variables,
-                                  'amp_url': self.request.build_absolute_uri(self.amp_url(*args, **kwargs)) if self.enable_amp else None
+                                  'keep_variables': keep_variables
         })
 
         print('End output HTML', now())
         return html
 
-    def output_amp_html(self, args, kwargs):
-        content = Collection()
-        content.append(self.modals)
-        content.append(self.nav)
-        content.append(self.main)
-        if self.crumbs:
-            self.base_object.insert(0, Spacer())
-            self.base_object.insert(1, Row(Div(BreadCrumbs(*self.crumbs), classes='col-md-12')))
-        content.append(self.items)
-        content.append(self.footer)
-
-        renderer = Renderer(self)
-        renderer.render('', content)
-
-        html = render(self.request, 'base_amp.html', {
-                                  'title':self.title,
-                                  'description':self.description.replace('"', '\''),
-                                  'keywords':self.keywords,
-                                  'author':self.author,
-                                  'full_url':self.request.build_absolute_uri(self.url(*args, **kwargs)),
-                                  'content':renderer.html,
-                                  'css':renderer.css
-        })
-
-        return html
 
     def render(self, request, *args, **kwargs):
         self.request = request
         self.user = self.request.user
 
         if request.method == 'GET':
-            self.edit_mode = self.user.is_superuser
             self.init()
             if SharkSettings.SHARK_GOOGLE_ANALYTICS_CODE:
                 self.append(GoogleAnalyticsTracking(SharkSettings.SHARK_GOOGLE_ANALYTICS_CODE))
@@ -252,22 +209,6 @@ class BasePageHandler(BaseHandler):
 
             return HttpResponse(json_data)
 
-    def render_amp(self, request, *args, **kwargs):
-        self.request = request
-        self.user = self.request.user
-
-        if request.method == 'GET':
-            self.init()
-            try:
-                self.render_amp_page(*args, **kwargs)
-            except NotFound404:
-                raise Http404()
-            else:
-                output = self.output_amp_html(args, kwargs)
-            return output
-
-        return HttpResponse('AMP Page')
-
     def append(self, *items):
         self.base_object.append(*items)
         if items:
@@ -289,9 +230,6 @@ class BasePageHandler(BaseHandler):
     def render_page(self):
         raise NotImplementedError
 
-    def render_amp_page(self, *args, **kwargs):
-        return self.render_page(*args, **kwargs)
-
     def text(self, name, default_txt=None):
         text = EditableText.load(name)
         if not text:
@@ -308,12 +246,6 @@ class BasePageHandler(BaseHandler):
 
     def replace_resource_js(self, resource):
         return JS('$("#resource-{}-{}").attr("href", "{}").on("load", function(){{$(window).resize()}});'.format(resource.module, resource.name, resource.url))
-
-    def _save_term(self, name, content):
-        if self.user.is_superuser:
-            text = EditableText.load(name)
-            text.content = content
-            text.save()
 
     def _handle_form_post(self, *args, post_action='', form_data='', **kwargs):
         form_data = {item.split('=', 1)[0]: item.split('=', 1)[1] for item in signing.loads(form_data).split('|')}
@@ -387,11 +319,6 @@ class Container(BaseObject):
         html.render('    ', self.items)
         html.append('</div>')
 
-    def get_amp_html(self, html):
-        html.append('<div' + self.base_attributes + '>')
-        html.render('    ', self.items)
-        html.append('</div>')
-
     def insert(self, i, x):
         self.items.insert(i, x)
 
@@ -423,12 +350,6 @@ def shark_django_redirect_handler(request, *args, handler=None, function=None, *
     return HttpResponsePermanentRedirect(url)
 
 
-def shark_django_amp_handler(request, *args, handler=None, **kwargs):
-    handler_instance = handler()
-    outcome = handler_instance.render_amp(request, *args, **kwargs)
-    return outcome
-
-
 class StaticPage(BasePageHandler):
     def render_page(self, url_name):
         page = StaticPageModel.load(url_name)
@@ -446,10 +367,6 @@ class StaticPage(BasePageHandler):
     @classmethod
     def url(cls, *args, **kwargs):
         return URL(reverse('shark:shark_static_page', args=args, kwargs=kwargs), False)
-
-    @classmethod
-    def amp_url(cls, *args, **kwargs):
-        return reverse('shark:shark_static_page.amp', args=args, kwargs=kwargs)
 
     @classmethod
     def sitemap(cls):

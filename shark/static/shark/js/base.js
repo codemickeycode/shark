@@ -19,14 +19,6 @@ function do_action(action, post_data) {
     send_action(post_data);
 }
 
-function content_changed(element) {
-    var data = {
-        'name': $(element).data('name'),
-        'content': $(element).html()
-    };
-    do_action('_save_term', data);
-}
-
 function getCookie(name) {
     var cookieValue = null;
     if (document.cookie && document.cookie != '') {

@@ -21,6 +21,52 @@ class TableContextualStyle(Enumeration):
     danger = 5
 
 
+# class Table(BaseObject):
+#     """
+#     Renders a complete table from a dataset
+#     """
+#     def __init__(self):
+#         data: 'Data for the table, can be a QuerySet or a list of dicts',
+#         columns: 'A list of strings of the column names to display',
+#         transforms: 'A dictionary of column names and functions that take the row as argument and return the text or objects to render' = None,
+#         include_header: 'Include the table header' = True,
+#         table_style: 'Optional table styles, such as condensed' = None) -> 'Table object for the data':
+#     transforms = transforms or []
+#     table = Table(table_style=table_style)
+#     if data:
+#         if include_header:
+#             table.head = TableHead()
+#
+#         field_names = []
+#         for column_name in columns:
+#             if '=' in column_name:
+#                 column_name, field_name = column_name.split('=')
+#             else:
+#                 field_name = column_name
+#             field_names.append(field_name)
+#
+#             if include_header:
+#                 table.head.columns.append(TableHeadColumn(column_name))
+#
+#         if len(data)>0 and isinstance(data[0], Model):
+#             in_function = lambda row: dir(row)
+#             get_function = lambda row, key: row.__getattribute__(key)
+#         else:
+#             in_function = lambda row:row
+#             get_function = lambda row, key: row[key]
+#
+#         for row in data:
+#             table_row = TableRow()
+#             for field_name in field_names:
+#                 if field_name in transforms:
+#                     table_row.columns.append(TableColumn(transforms[field_name](row)))
+#                 elif field_name.lower() in in_function(row):
+#                     value = get_function(row, field_name.lower())
+#                     table_row.columns.append(TableColumn(value if isinstance(value, str) else str(value)))
+#             table.rows.append(table_row)
+#
+
+
 class Table(BaseObject):
     """
     Creates the table element.
@@ -44,14 +90,6 @@ class Table(BaseObject):
                 self.add_class('table-' + TableStyle.name(self.table_style))
 
     def get_html(self, html):
-        html.append(u'<table' + self.base_attributes + '>')
-        html.render(u'    ', self.head)
-        html.append(u'    <tbody>')
-        html.render(u'    ', self.rows)
-        html.append(u'    </tbody>')
-        html.append(u'</table>')
-
-    def get_amp_html(self, html):
         html.append(u'<table' + self.base_attributes + '>')
         html.render(u'    ', self.head)
         html.append(u'    <tbody>')
@@ -90,11 +128,6 @@ class TableHead(BaseObject):
         html.render(u'    ', self.columns)
         html.append(u'</tr></thead>')
 
-    def get_amp_html(self, html):
-        html.append(u'<thead ' + self.base_attributes + u'><tr>')
-        html.render(u'    ', self.columns)
-        html.append(u'</tr></thead>')
-
 
 class TableHeadColumn(BaseObject):
     def __init__(self, items=Default, colspan=0, rowspan=0, **kwargs):
@@ -107,11 +140,6 @@ class TableHeadColumn(BaseObject):
         self.add_attribute('rowspan', self.rowspan)
 
     def get_html(self, html):
-        html.append(u'<th' + self.base_attributes + '>')
-        html.render(u'    ', self.items)
-        html.append(u'</th>')
-
-    def get_amp_html(self, html):
         html.append(u'<th' + self.base_attributes + '>')
         html.render(u'    ', self.items)
         html.append(u'</th>')
@@ -136,11 +164,6 @@ class TableRow(BaseObject):
         html.render(u'    ', self.columns)
         html.append(u'</tr>')
 
-    def get_amp_html(self, html):
-        html.append(u'<tr' + self.base_attributes + u'>')
-        html.render(u'    ', self.columns)
-        html.append(u'</tr>')
-
 
 class TableColumn(BaseObject):
     def __init__(self, items=Default, colspan=0, rowspan=0, align='', **kwargs):
@@ -158,14 +181,9 @@ class TableColumn(BaseObject):
             self.style += 'text-align: {};'.format(self.align)
 
     def get_html(self, html):
-        html.append(u'<td' + self.base_attributes + '>')
-        html.render(u'    ', self.items)
-        html.append(u'</td>')
-
-    def get_amp_html(self, html):
-        html.append(u'<td' + self.base_attributes + '>')
-        html.render(u'    ', self.items)
-        html.append(u'</td>')
+        html.append('<td' + self.base_attributes + '>')
+        html.render('    ', self.items)
+        html.append('</td>')
 
 
 

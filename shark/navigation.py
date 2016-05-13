@@ -97,11 +97,6 @@ class NavBrand(BaseObject):
         html.inline_render(self.name)
         html.append('</a>')
 
-    def get_amp_html(self, html):
-        html.append('<a' + self.base_attributes + ' class="navbar-brand"' + self.url.href + '>')
-        html.inline_render(self.name)
-        html.append('</a>')
-
 
 class NavLink(BaseObject):
     def __init__(self, name=Default, url=None, active=False, **kwargs):

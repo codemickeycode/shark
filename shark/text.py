@@ -48,19 +48,6 @@ class Anchor(BaseObject):
             html.inline_render(self.text)
             html.append('</span></a>')
 
-    def get_amp_html(self, html):
-        if self.new_window == Default:
-            self.new_window = self.url.url.find('://')>=0 or self.url.url.startswith('//')
-
-        if not self.microdata:
-            html.append('<a' + self.url.href + self.base_attributes + iif(self.new_window, ' target="_blank"') + '>')
-            html.inline_render(self.text)
-            html.append('</a>')
-        else:
-            html.append('<a itemprop="item"' + self.url.href + self.base_attributes + iif(self.new_window, ' target="_blank"') + '><span itemprop="name">')
-            html.inline_render(self.text)
-            html.append('</span></a>')
-
 
 class Heading(BaseObject):
     """
@@ -77,15 +64,6 @@ class Heading(BaseObject):
         html.inline_render(self.text)
         if self.subtext:
             html.append(' <small>')
-            html.inline_render(self.subtext)
-            html.append('</small>')
-        html.append('</h' + str(self.level) + '>')
-
-    def get_amp_html(self, html):
-        html.append('<h' + str(self.level) + self.base_attributes + u'>')
-        html.inline_render(self.text)
-        if self.subtext:
-            html.append('<small>')
             html.inline_render(self.subtext)
             html.append('</small>')
         html.append('</h' + str(self.level) + '>')
