@@ -317,7 +317,7 @@ class Form(BaseObject):
         self.init(kwargs)
         self.form = self.param(form, 'SharkForm', 'The form to render')
         self.items = self.param(items, 'Collection', 'Items in the form')
-        self.id_needed = True
+        self.id_needed()
         self.error_object = None
         self.form.setup_form()
         self.form_data = {'formid': self.id, 'form': '{}({})'.format(self.form.class_name, self.form.serialize())}

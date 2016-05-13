@@ -128,7 +128,7 @@ class BasePageHandler(BaseHandler):
             if variable_name not in self.ignored_variables:
                 variable = self.__getattribute__(variable_name)
                 if isinstance(variable, BaseObject):
-                    variable.id_needed = True
+                    variable.id_needed()
                     keep_variables[variable_name] = variable.serialize()
 
         renderer = Renderer(self)

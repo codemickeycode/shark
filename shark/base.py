@@ -53,25 +53,22 @@ class BaseObject(object):
     object_number = 0
 
     def init(self, kwargs):
-        self.__class__.object_number += 1
-        self.obj_nr = self.__class__.object_number
-        self.id = kwargs.get('id', self.__class__.__name__ + '_' + str(self.__class__.object_number))
-        self.id_needed = 'id' in kwargs
-        self.auto_id = 'id' not in kwargs
-        self.classes = kwargs.get('classes', '')
-        self.style = kwargs.get('style', '')
-        self.tab_index = kwargs.get('tab_index', '')
-        self.role = kwargs.get('role', '')
-        self.onclick = kwargs.get('onclick', '')
+        self.id = kwargs.pop('id', None)
+        self.classes = kwargs.pop('classes', '')
+        self.style = kwargs.pop('style', '')
         self.extra_attributes = ''
-        self.children = []  # TODO: This isn't populated correctly?
-        self.parent = None  # TODO: This isn't populated correctly?
+        self.parent = None
 
         self.variables = {}
 
-        for kwarg in ['id', 'classes', 'style', 'tab_index', 'role', 'onclick']:
-            if kwarg in kwargs:
-                del kwargs[kwarg]
+        for kwarg in ['id', 'style', 'tab_index', 'role', 'onclick']:
+            kwargs.pop(kwarg, None)
+
+    def id_needed(self):
+        if not self.id:
+            self.__class__.object_number += 1
+            self.obj_nr = self.__class__.object_number
+            self.id = '%s_%s' % self.__class__.__name__, self.obj_nr
 
     def param(self, value, type, description='', default=None):
         if value == Default:
@@ -155,7 +152,6 @@ class BaseObject(object):
                 value = Collection(value)
             elif 'parent' not in dir(value) or 'render' not in dir(value):
                 raise TypeError('Class {} was passed {} of type {} but expected a Collection, list, Object, string or int.'.format(self.__class__.__name__, value, value.__class__.__name__))
-            self.children.append(value)
             value.parent = self
         elif type == 'list':
             if not value.__class__ is list:
@@ -169,21 +165,10 @@ class BaseObject(object):
         else:
             raise KeyError('Object has no "items" Collection. Are you trying to self.append in the get_html of a Shark Object? Use the renderer instead.')
 
-    def find_id(self, id):
-        if self.id == id:
-            return self
-
-        for item in self.children:
-            result = item.find_id(id)
-            if result:
-                return result
-
-        return None
-
     @property
     def base_attributes(self):
         attributes = []
-        if self.id and self.id_needed:
+        if self.id:
             attributes.append(' id="' + self.id + '"')
         if self.classes:
             attributes.append(' class="' + self.classes + '"')
@@ -238,7 +223,7 @@ class BaseObject(object):
 
     @property
     def jq(self):
-        self.id_needed = True
+        self.id_needed()
         return JQ("$('#{}')".format(self.id), self)
 
     @classmethod
@@ -254,7 +239,7 @@ def objectify(obj):
     elif isinstance(obj, str):
         return Text(obj)
     elif isinstance(obj, Iterable):
-        return Collection(obj)
+        return Collection(*obj)
     else:
         raise TypeError('Cannot cast to Shark Object')
 
@@ -440,25 +425,28 @@ class Renderer:
 
 class Collection(list):
     def __init__(self, *args, **kwargs):
-        from shark.forms import SharkFieldDefinition
         if len(args)>1:
             args = [args]
-        super(Collection, self).__init__(*args, **kwargs)
-        for i, item in enumerate(self.copy()):
-            if isinstance(item, str):
-                self.pop(i)
-                self.insert(i, Text(item))
-            elif isinstance(item, Iterable) and not isinstance(item, BaseObject) and not isinstance(item, Collection):
-                self.pop(i)
-                self.insert(i, Collection(item))
-            elif isinstance(item, SharkFieldDefinition):
-                self.pop(i)
-                self.insert(i, item.default_object(item.name))
-            if isinstance(item, BaseObject):
-                item.parent = self
 
-        self.style = None
+        fixed_args = []
+        for arg in args:
+            if isinstance(arg, (BaseObject, Collection)):
+                pass
+            elif not arg:
+                arg = None
+            elif isinstance(arg, str):
+                arg = Text(arg)
+            elif isinstance(arg, Iterable):
+                arg = Collection(*arg)
+            else:
+                arg = Text(str(arg))
+
+            fixed_args.append(arg)
+
+        super(Collection, self).__init__(fixed_args, **kwargs)
+
         self.parent = None
+
 
     def append(self, *objects):
         for obj in objects:
@@ -500,18 +488,6 @@ class Collection(list):
         self.get_html(renderer)
 
         return renderer
-
-    def find_id(self, id):
-        for item in self:
-            if item.id == id:
-                return item
-
-        for item in self:
-            result = item.find_id(id)
-            if result:
-                return result
-
-        return None
 
     def __add__(self, other):
         obj = objectify(other)

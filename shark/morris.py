@@ -12,7 +12,7 @@ class Graph(BaseObject):
         self.y_columns = self.param(y_columns, 'list', 'Name of the y columns in the data', [])
         self.width = self.param(width, 'css_attr', 'Graph width')
         self.height = self.param(height, 'css_attr', 'Graph height')
-        self.id_needed = True
+        self.id_needed()
 
     def get_html(self, renderer):
         renderer.add_resource('//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js', 'js', 'morris', 'raphael')

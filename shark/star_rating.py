@@ -7,7 +7,7 @@ class StarRating(BaseObject):
         self.init(kwargs)
         self.rating = self.param(rating, 'int', 'Current rating.')
         self.readonly = self.param(readonly, 'bool', 'Is the rating read only?')
-        self.id_needed = True
+        self.id_needed()
 
     def get_html(self, html):
         html.append('<select' + self.base_attributes + '>')

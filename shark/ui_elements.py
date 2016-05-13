@@ -146,7 +146,7 @@ class Carousel(BaseObject):
     def __init__(self, slides=Default, **kwargs):
         self.init(kwargs)
         self.slides = self.param(slides, 'list', 'List of slides.', [])
-        self.id_needed = True
+        self.id_needed()
 
     def get_html(self, html):
         self.add_class('carousel slide')
@@ -193,7 +193,7 @@ class Tab(BaseObject):
         self.name = self.param(name, 'Collection', 'Name of the tab')
         self.items = self.param(items, 'Collection', 'Content of the tab')
         self.active = self.param(active, 'boolean', 'Make this the active tab. Defaults to the first tab')
-        self.id_needed = True
+        self.id_needed()
 
     def get_html(self, html):
         html.append('<div' + self.base_attributes + ' role="tabpanel" class="tab-pane{}">'.format(' active' if self.active else ''))
@@ -205,7 +205,7 @@ class Tabs(BaseObject):
     def __init__(self, tabs=None, **kwargs):
         self.init(kwargs)
         self.tabs = self.param(tabs, 'Collection', 'The list of Tab objects')
-        self.id_needed = True
+        self.id_needed()
 
     def get_html(self, html):
         if not self.tabs:
@@ -284,7 +284,7 @@ class Video(BaseObject):
         self.aspect_ratio = self.param(aspect_ratio, 'float', 'Aspect of video, used for iframed videos in fluid layouts')
 
     def get_html(self, html):
-        self.id_needed = True
+        self.id_needed()
         if len(self.urls)==1 and self.urls[0].startswith('https://vimeo.com/'):
             video_id_match = re.match('https://vimeo.com/([0-9]*)', self.urls[0])
             if video_id_match:
@@ -361,7 +361,7 @@ class Parallax(BaseObject):
         self.items = self.param(items, 'Collection', 'The items in the section', Collection())
         self.speed = self.param(speed, 'float', 'The speed of the parallax, higher numbers is slower. 1 is normal page speed, 2 is half speed, etc.')
         self.style += 'background: url({}) 50% 0/100% fixed; height: auto; margin: 0 auto; width: 100%; position: relative;'.format(self.background_url)
-        self.id_needed = True
+        self.id_needed()
 
     def get_html(self, html):
         html.append('<section' + self.base_attributes + '>')

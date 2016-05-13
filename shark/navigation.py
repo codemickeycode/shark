@@ -19,11 +19,11 @@ class NavBar(BaseObject):
 
     def get_html(self, html):
         if self.position == NavBarPosition.fixed_top:
-            self.id_needed = True
+            self.id_needed()
             html.append_js("$(window).resize(function () {$('body').css('padding-top', parseInt($('#" + self.id + "').css('height')))});")
             html.append_js("$('body').css('padding-top', parseInt($('#" + self.id + "').css('height')));")
         elif self.position == NavBarPosition.fixed_bottom:
-            self.id_needed = True
+            self.id_needed()
             html.append_js("$(window).resize(function () {$('body').css('padding-bottom', parseInt($('#" + self.id + "').css('height')))});")
             html.append_js("$('body').css('padding-bottom', parseInt($('#" + self.id + "').css('height')));")
 
