@@ -5,6 +5,7 @@ setup(
     packages = ["shark"],
     package_data = {"shark": [
         'objects/*.py',
+        'extras/*.py',
         'migrations/*.py',
         'templates/*.html',
         'static/shark/css/*.css',
@@ -22,7 +23,7 @@ setup(
         'static/django_markdown/skins/simple/images/*.*',
         'templates/django_markdown/*.*',
     ]},
-    version = "0.3.124",
+    version = "0.3.125",
     description = "Django based bootstrap web framework",
     author = "Bart Jellema",
     author_email = "b@rtje.net",

@@ -20,7 +20,6 @@ from shark.models import EditableText, StaticPage as StaticPageModel
 from shark.objects.analytics import GoogleAnalyticsTracking
 from shark.objects.layout import Div, Spacer, Row
 from shark.objects.navigation import NavLink
-from shark.old.forms import *
 from shark.settings import SharkSettings
 from .base import Collection, BaseObject, PlaceholderWebObject, Default, ALLOWED_TAGS, ALLOWED_ATTRIBUTES, \
     ALLOWED_STYLES, Markdown, Renderer
@@ -242,42 +241,42 @@ class BasePageHandler(BaseHandler):
     def replace_resource_js(self, resource):
         return JS('$("#resource-{}-{}").attr("href", "{}").on("load", function(){{$(window).resize()}});'.format(resource.module, resource.name, resource.url))
 
-    def _handle_form_post(self, *args, post_action='', form_data='', **kwargs):
-        form_data = {item.split('=', 1)[0]: item.split('=', 1)[1] for item in signing.loads(form_data).split('|')}
-        form_id = form_data['formid']
-        form_class_description = form_data['form']
-        form_class_name = re.match('(.*)\((.*)\)', form_class_description).group(1)
-        form_class_params = re.match('(.*)\((.*)\)', form_class_description).group(2)
-        form_error_class = form_data['formerror']
-
-        form = SharkForm.sub_classes[form_class_name]()
-        form.deserialize(form_class_params)
-        formerror = FormError.sub_classes[form_error_class](form_id)
-        form.setup_post(kwargs)
-
-        form._validate()
-        if not form.errors:
-            if post_action:
-                self.__getattribute__(post_action)(*args, form)
-            else:
-                form.save()
-        else:
-            renderer = Renderer()
-            for error in form.errors:
-                error_object = formerror
-                if error.field and ('fld-' + error.field.full_name) in form_data:
-                    error_object = FieldError.sub_classes[form_data['fld-' + error.field.full_name]](error.field.full_name)
-
-                if error_object:
-                    selector = "$('#{} .{}')".format(form_id, error_object.html_class_name)
-                    error_renderer = Renderer()
-                    error_object._render_error(error_renderer, error.message)
-                    self.javascript += JQ(selector, renderer=renderer).append_raw(error_renderer.html).js
-                    self.javascript += error_renderer.js
-                print(error.field, error.message)
-
-            renderer.render('', None)
-            self.javascript = renderer.js + self.javascript
+    # def _handle_form_post(self, *args, post_action='', form_data='', **kwargs):
+    #     form_data = {item.split('=', 1)[0]: item.split('=', 1)[1] for item in signing.loads(form_data).split('|')}
+    #     form_id = form_data['formid']
+    #     form_class_description = form_data['form']
+    #     form_class_name = re.match('(.*)\((.*)\)', form_class_description).group(1)
+    #     form_class_params = re.match('(.*)\((.*)\)', form_class_description).group(2)
+    #     form_error_class = form_data['formerror']
+    #
+    #     form = SharkForm.sub_classes[form_class_name]()
+    #     form.deserialize(form_class_params)
+    #     formerror = FormError.sub_classes[form_error_class](form_id)
+    #     form.setup_post(kwargs)
+    #
+    #     form._validate()
+    #     if not form.errors:
+    #         if post_action:
+    #             self.__getattribute__(post_action)(*args, form)
+    #         else:
+    #             form.save()
+    #     else:
+    #         renderer = Renderer()
+    #         for error in form.errors:
+    #             error_object = formerror
+    #             if error.field and ('fld-' + error.field.full_name) in form_data:
+    #                 error_object = FieldError.sub_classes[form_data['fld-' + error.field.full_name]](error.field.full_name)
+    #
+    #             if error_object:
+    #                 selector = "$('#{} .{}')".format(form_id, error_object.html_class_name)
+    #                 error_renderer = Renderer()
+    #                 error_object._render_error(error_renderer, error.message)
+    #                 self.javascript += JQ(selector, renderer=renderer).append_raw(error_renderer.html).js
+    #                 self.javascript += error_renderer.js
+    #             print(error.field, error.message)
+    #
+    #         renderer.render('', None)
+    #         self.javascript = renderer.js + self.javascript
 
 
 def exists_or_404(value):
