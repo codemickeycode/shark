@@ -5,7 +5,7 @@ from shark.base import BaseObject, Default
 from shark.common import iif, attr
 from shark.resources import Resources
 
-Resources.add_resource('https://cdnjs.cloudflare.com/ajax/libs/1000hz-bootstrap-validator/0.10.1/validator.min.js', 'js', 'validator', 'main')
+# Resources.add_resource('https://cdnjs.cloudflare.com/ajax/libs/1000hz-bootstrap-validator/0.10.1/validator.min.js', 'js', 'validator', 'main')
 
 class FieldError(BaseObject):
     sub_classes = {}

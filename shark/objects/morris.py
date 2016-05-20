@@ -1,4 +1,4 @@
-from .base import BaseObject, Default
+from shark.base import BaseObject, Default
 
 
 class Graph(BaseObject):

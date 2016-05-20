@@ -1,4 +1,4 @@
-from .base import BaseObject, Default, Raw, Collection, Enumeration
+from shark.base import BaseObject, Default, Raw, Collection, Enumeration
 
 
 class NavBarPosition(Enumeration):
@@ -119,7 +119,7 @@ class NavDivider(BaseObject):
         self.init(kwargs)
 
     def get_html(self, html):
-        html.append('<li' + self.base_attributes + '" class="divider"></li>')
+        html.append('<li' + self.base_attributes + ' class="divider"></li>')
 
 
 class NavDropDown(BaseObject):
@@ -143,9 +143,10 @@ class NavSearch(BaseObject):
         self.name = self.param(name, 'string', 'Placeholder text')
         self.button_name = self.param(button_name, 'Collection', 'Text on the search button')
         self.url = self.param(url, 'url', 'Search URL')
+        self.add_class('navbar-form navbar-left')
 
     def get_html(self, html):
-        html.append('<form id="' + self.id + '" action="' + self.url + '" class="navbar-form navbar-left web_object" role="search">')
+        html.append('<form' + self.base_attributes + ' action="' + self.url + '" role="search">')
         html.append('    <div class="form-group">')
         html.append('        <input name="keywords" type="text" class="form-control" placeholder="' + self.name + '">')
         html.append('    </div>')

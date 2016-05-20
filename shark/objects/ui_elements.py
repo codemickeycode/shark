@@ -2,10 +2,10 @@ import re
 
 from django.utils.http import urlencode
 
+from shark.base import BaseObject, Collection, Default, Enumeration, Raw
+from shark.objects.layout import Panel, multiple_div_row, Paragraph
+from shark.objects.text import Anchor
 from shark.settings import SharkSettings
-from shark.text import Anchor
-from .layout import Panel, multiple_div_row, Row, Paragraph
-from .base import BaseObject, Collection, Default, Enumeration, iif, Raw
 
 
 class BreadCrumbs(BaseObject):
@@ -18,16 +18,16 @@ class BreadCrumbs(BaseObject):
         self.microdata = self.param(microdata, 'bool', 'Include microdata properties in the html. This might render the breadcrumbs in Google search results.')
 
     def get_html(self, html):
-        html.append('<ol class="breadcrumb"{}>'.format(iif(self.microdata, ' itemscope itemtype="http://schema.org/BreadcrumbList"')))
+        html.append('<ol class="breadcrumb"{}>'.format(' itemscope itemtype="http://schema.org/BreadcrumbList"' if self.microdata else ''))
         for i, crumb in enumerate(self.crumbs):
             if self.microdata and isinstance(crumb, Anchor):
                 crumb.microdata = True
-                html.append('    <li' + iif(i == len(self.crumbs) - 1, ' class="active"') + ' itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">')
+                html.append('    <li' + (' class="active"' if i == len(self.crumbs) - 1 else '') + ' itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">')
                 html.render('        ', crumb)
                 html.append('        <meta itemprop="position" content="{}" />'.format(i))
                 html.append('    </li>')
             else:
-                html.append('    <li' + iif(i == len(self.crumbs) - 1, ' class="active"') + '>')
+                html.append('    <li' + (' class="active"' if i == len(self.crumbs) - 1 else '') + '>')
                 html.render('        ', crumb)
                 html.append('    </li>')
         html.append('</ol>')
@@ -295,7 +295,7 @@ class Video(BaseObject):
             if video_id_match:
                 html.append('<div' + self.base_attributes + '><iframe src="https://www.youtube.com/embed/{}" frameborder="0" allowfullscreen></iframe></div>'.format(video_id_match.group(1)))
         else:
-            html.append("<video" + self.base_attributes + " width='100%' controls{}>".format(iif(self.auto_play, ' autoplay')))
+            html.append("<video" + self.base_attributes + " width='100%' controls{}>".format(' autoplay' if self.auto_play else ''))
             for link in self.urls:
                 html.append(u"    <source src='" + link + u"'>")
             html.append("</video>")

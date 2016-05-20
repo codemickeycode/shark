@@ -1,7 +1,7 @@
+from shark.base import Raw, Enumeration, BaseObject, Default
 from shark.common import LOREM_IPSUM
-from shark.layout import Paragraph, Spacer, multiple_div_row
-from shark.text import Hr, Br
-from .base import Raw, Enumeration, BaseObject, Default
+from shark.objects.layout import Paragraph, multiple_div_row
+from shark.objects.text import Br
 
 
 def icon(name, size=0,

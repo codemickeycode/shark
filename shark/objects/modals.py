@@ -1,4 +1,4 @@
-from .base import BaseObject, Default, Collection
+from shark.base import BaseObject, Default, Collection
 
 
 class Modal(BaseObject):

@@ -1,5 +1,5 @@
-from shark.font_awesome import Icon
-from .base import BaseObject, Default, Collection
+from shark.objects.font_awesome import Icon
+from shark.base import BaseObject, Default, Collection
 
 
 class UnorderedList(BaseObject):

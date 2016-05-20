@@ -1,6 +1,6 @@
 from shark.base import BaseObject
-from shark.font_awesome import Icon
-from shark.layout import multiple_div_row
+from shark.objects.font_awesome import Icon
+from shark.objects.layout import multiple_div_row
 
 
 class StatBox(BaseObject):

@@ -1,18 +1,18 @@
 import inspect
 import json
 import logging
-from functools import partial
 import re
+from collections import Iterable
+from functools import partial
 
-from django.contrib.admin.utils import unquote
+import bleach
+from django.utils.html import escape
 from django.utils.http import urlquote
 from markdown import markdown
-import bleach
-from collections import Iterable
-from django.utils.html import escape
+
 from shark.actions import URL, NoAction, BaseAction, JS, Action, JQ
 from shark.resources import Resources
-from .common import iif, LOREM_IPSUM
+from .common import LOREM_IPSUM
 
 Default = object()
 NotProvided = object()
@@ -258,6 +258,16 @@ class PlaceholderWebObject(object):
         self.jqs.append(jq)
         return jq
 
+    def add_variable(self, web_object):
+        name = self.id.lower() + '_' + str(len(self.variables) + 1)
+        self.variables[name] = objectify(web_object)
+        return name
+
+    #TODO: Support calling methods on the original class, like Image().src()
+    def src(self, src):
+        return self.jq.attr('src', src)
+
+
 
 class Renderer:
     object_number = 0
@@ -340,6 +350,9 @@ class Renderer:
 
             self.indent -= len(indent)
 
+    def render_all(self, data):
+        self.render('', objectify(data))
+
     def inline_render(self, web_object):
         if self.separator and len(self._rendering_to) and self._rendering_to[-1].endswith(self.separator):
             self._rendering_to[-1] = self._rendering_to[-1][:-len(self.separator)]
@@ -387,13 +400,16 @@ class Renderer:
     def add_resource(self, url, type, module, name=''):
         self.resources.add_resource(url, type, module, name)
 
+    def replace_resource(self, url, type, module, name=''):
+        self.resources.replace_resource(url, type, module, name)
+
     @property
     def html(self):
         return ''.join(self._rendering_to)
 
     @property
     def css(self):
-        css = self._css
+        css = self._css.copy()
         for style, class_name in self._css_classes.items():
             css.append('.' + class_name + '{' + style + '}')
 
@@ -622,7 +638,7 @@ class Markdown(BaseObject):
 
     @classmethod
     def example(self):
-        from shark.layout import Panel
+        from shark.objects.layout import Panel
 
         return Markdown(
             "###Markdown is great###\n"

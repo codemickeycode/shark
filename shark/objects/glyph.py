@@ -1,4 +1,4 @@
-from .base import Raw, Enumeration
+from shark.base import Raw, Enumeration
 
 
 def glyph(name):

@@ -1,6 +1,6 @@
 from shark.common import iif
-from .base import BaseObject, Default, Collection, Markdown, Raw, Size, ButtonState, ButtonStyle
-from .layout import Span, Paragraph, Footer
+from shark.objects.layout import Span, Paragraph, Footer
+from shark.base import BaseObject, Default, Collection, Raw, Size, ButtonState, ButtonStyle
 
 
 class Abbrev(Span):

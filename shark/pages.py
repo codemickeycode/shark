@@ -1,6 +1,6 @@
-from .ui_elements import SearchBox
-from .text import Heading, Anchor
-from .layout import Row, Spacer
+from shark.objects.layout import Row, Spacer
+from shark.objects.text import Heading, Anchor
+from shark.objects.ui_elements import SearchBox
 from .handler import BasePageHandler
 
 

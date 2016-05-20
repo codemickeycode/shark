@@ -1,9 +1,9 @@
 from django.utils.timezone import now
 
-from shark.base import BaseObject, Raw
+from shark.base import Raw
 from shark.handler import Container
-from shark.layout import Footer, Row, Div, Paragraph, Spacer
-from shark.lists import UnorderedList, ListItem
+from shark.objects.layout import Footer, Row, Div, Paragraph, Spacer
+from shark.objects.lists import UnorderedList, ListItem
 
 
 def simple_footer(company_name, *items):

@@ -21,7 +21,7 @@ setup(
         'static/django_markdown/skins/simple/images/*.*',
         'templates/django_markdown/*.*',
     ]},
-    version = "0.3.122",
+    version = "0.3.123",
     description = "Django based bootstrap web framework",
     author = "Bart Jellema",
     author_email = "b@rtje.net",
@@ -38,12 +38,14 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Framework :: Django",
-        "Framework :: Django :: 1.9",
-        "License :: Free for non-commercial use",
+        "Framework :: Django :: 1.9.6",
+        "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
+        "Topic :: Software Development :: Libraries :: Application Frameworks",
         "Topic :: Software Development :: Libraries :: Python Modules",
         ],
     long_description = """\
@@ -51,7 +53,7 @@ The Shark framework is a framework that allows for creating MVPs super fast. Dja
 but you still have to write your own html and css. In Shark there's no need for this. You define in your view what you want
 to see and it gets rendered using Bootstrap and all html, css and javascript is generated for you.
 
-Started docs and more info at http://getshark.org/
+More info at http://getshark.org/
 
 If you're interested, drop me a line: b@rtje.net
 """

@@ -1,5 +1,5 @@
-from .base import BaseObject
-from .resources import Resources
+from shark.base import BaseObject
+from shark.resources import Resources
 
 
 class ProfilePanel(BaseObject):

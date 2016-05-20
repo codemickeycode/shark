@@ -1,7 +1,7 @@
 from collections import Iterable
 
-from .base import BaseObject, Default, Collection, Enumeration
-from .resources import Resources, Resource
+from shark.base import BaseObject, Default, Collection, Enumeration
+from shark.resources import Resources, Resource
 
 
 class BootswatchTheme(Enumeration):
@@ -31,8 +31,16 @@ def get_theme_resource(theme):
         return Resource('https://maxcdn.bootstrapcdn.com/bootswatch/3.3.6/{}/bootstrap.min.css'.format(BootswatchTheme.name(theme)), 'css', 'bootstrap', 'main')
 
 
-def use_theme(theme):
-    Resources.replace_resource('https://maxcdn.bootstrapcdn.com/bootswatch/3.3.6/{}/bootstrap.min.css'.format(BootswatchTheme.name(theme)), 'css', 'bootstrap', 'main')
+class Theme(BaseObject):
+    """
+    Select a bootstrap Theme
+    """
+    def __init__(self, theme_name='cerulean', **kwargs):
+        self.init(kwargs)
+        self.theme_name = self.param(theme_name, 'string', 'Name of the theme')
+
+    def get_html(self, html):
+        html.replace_resource('https://maxcdn.bootstrapcdn.com/bootswatch/3.3.6/{}/bootstrap.min.css'.format(self.theme_name), 'css', 'bootstrap', 'main')
 
 
 class Br(BaseObject):
@@ -249,9 +257,10 @@ class Jumbotron(BaseObject):
     def __init__(self, items=Default, **kwargs):
         self.init(kwargs)
         self.items = self.param(items, 'Collection', 'Items in the container', Collection())
+        self.add_class('jumbotron')
 
     def get_html(self, html):
-        html.append(u'<div id="' + self.id + '" class="jumbotron web_object">')
+        html.append(u'<div' + self.base_attributes + '>')
         html.render(u'    ', self.items)
         html.append(u'</div>')
 

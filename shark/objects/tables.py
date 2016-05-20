@@ -1,7 +1,7 @@
 from collections import Iterable
 from django.db.models import Model
 
-from .base import Enumeration, BaseObject, Default, Collection
+from shark.base import Enumeration, BaseObject, Default, Collection
 
 
 class TableStyle(Enumeration):

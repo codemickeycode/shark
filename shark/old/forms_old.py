@@ -1,5 +1,5 @@
-from .base import Enumeration, BaseObject, Default, Collection, iif, Size, ButtonStyle, ButtonState
-from .glyph import glyph, Glyph
+from shark.objects.glyph import glyph, Glyph
+from shark.base import Enumeration, BaseObject, Default, Collection, iif, Size, ButtonStyle, ButtonState
 
 
 class FormStyle(Enumeration):

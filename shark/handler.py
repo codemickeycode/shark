@@ -1,35 +1,27 @@
-import inspect
+import json
 import logging
-
-import time
+import re
+from collections import Iterable
 
 import bleach
 import markdown
-from collections import Iterable
-import json
-
-import re
-from django.core import signing
 from django.core.urlresolvers import reverse, get_resolver, RegexURLResolver, RegexURLPattern, NoReverseMatch
-from django.http import Http404, HttpResponse, HttpResponseRedirect, HttpResponsePermanentRedirect
+from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect
 from django.shortcuts import render
 from django.test import Client
 from django.test import TestCase
-from django.utils.html import escape
 from django.utils.timezone import now
 from django.views.static import serve
 
 from shark import models
 from shark.actions import JS, JQ, BaseAction, URL
-from shark.analytics import GoogleAnalyticsTracking
 from shark.common import listify
-from shark.forms import *
-from shark.layout import Div, Spacer, Row
 from shark.models import EditableText, StaticPage as StaticPageModel
-from shark.navigation import NavLink
+from shark.objects.analytics import GoogleAnalyticsTracking
+from shark.objects.layout import Div, Spacer, Row
+from shark.objects.navigation import NavLink
+from shark.old.forms import *
 from shark.settings import SharkSettings
-from shark.text import Anchor
-from shark.ui_elements import BreadCrumbs
 from .base import Collection, BaseObject, PlaceholderWebObject, Default, ALLOWED_TAGS, ALLOWED_ATTRIBUTES, \
     ALLOWED_STYLES, Markdown, Renderer
 from .resources import Resources
@@ -105,6 +97,9 @@ class BasePageHandler(BaseHandler):
         self.footer = None
 
         self.javascript = ''
+
+        self.resources = Resources()
+        self.resources.add_resource('http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css', 'css', 'bootstrap', 'main')
 
         print('Handler created', now())
 
@@ -289,9 +284,6 @@ def exists_or_404(value):
     if not value:
         raise Http404()
     return value
-
-
-Resources.add_resource('http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css', 'css', 'bootstrap', 'main')
 
 
 class HandlerTestCase(TestCase):

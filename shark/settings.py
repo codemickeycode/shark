@@ -1,4 +1,4 @@
-from django_pluggableappsettings import AppSettings, Setting, IntSetting, StringSetting, ClassSetting
+from django_pluggableappsettings import AppSettings, Setting, IntSetting, StringSetting
 
 
 class SharkSettings(AppSettings):

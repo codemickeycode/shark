@@ -2,7 +2,7 @@ import pygments
 import pygments.lexers
 import pygments.formatters
 
-from .handler import BaseObject
+from shark.handler import BaseObject
 
 
 class HighlightCode(BaseObject):
