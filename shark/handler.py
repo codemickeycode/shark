@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 from collections import Iterable
 
 import bleach
@@ -10,6 +9,7 @@ from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect
 from django.shortcuts import render
 from django.test import Client
 from django.test import TestCase
+from django.utils.html import escape
 from django.utils.timezone import now
 from django.views.static import serve
 
@@ -20,6 +20,7 @@ from shark.models import EditableText, StaticPage as StaticPageModel
 from shark.objects.analytics import GoogleAnalyticsTracking
 from shark.objects.layout import Div, Spacer, Row
 from shark.objects.navigation import NavLink
+from shark.objects.ui_elements import BreadCrumbs
 from shark.settings import SharkSettings
 from .base import Collection, BaseObject, PlaceholderWebObject, Default, ALLOWED_TAGS, ALLOWED_ATTRIBUTES, \
     ALLOWED_STYLES, Markdown, Renderer
