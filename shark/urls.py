@@ -41,21 +41,24 @@ def get_urls():
             for obj in objs:
                 add_handler(obj)
 
-    if SharkSettings.SHARK_PAGE_HANDLER and SharkSettings.SHARK_USE_STATIC_PAGES:
+    if SharkSettings.SHARK_PAGE_HANDLER:
         handler_parts = SharkSettings.SHARK_PAGE_HANDLER.split('.')
-        obj = __import__(handler_parts[0])
+        page_handler = __import__(handler_parts[0])
         for handler_part in handler_parts[1:]:
-            obj = obj.__dict__[handler_part]
+            page_handler = page_handler.__dict__[handler_part]
 
-        urlpatterns.append(url(
-                '^page/(.*)$',
-                shark_django_handler,
-                {'handler': new_class('StaticPage', (StaticPage, obj))},
-                name='shark_static_page'
-        ))
+        if SharkSettings.SHARK_USE_STATIC_PAGES:
+            urlpatterns.append(url(
+                    '^page/(.*)$',
+                    shark_django_handler,
+                    {'handler': new_class('StaticPage', (StaticPage, page_handler))},
+                    name='shark_static_page'
+            ))
+
+        add_handler(Favicon)
+
 
     add_handler(SiteMap)
-    add_handler(Favicon)
 
     urlpatterns.append(url(r'^markdown_preview/$', markdown_preview, name='django_markdown_preview'))
 

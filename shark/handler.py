@@ -1,9 +1,12 @@
 import json
 import logging
+import os
 from collections import Iterable
 
 import bleach
 import markdown
+from django.conf import settings
+from django.contrib.staticfiles.storage import staticfiles_storage
 from django.core.urlresolvers import reverse, get_resolver, RegexURLResolver, RegexURLPattern, NoReverseMatch
 from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect
 from django.shortcuts import render
@@ -441,7 +444,8 @@ class Favicon(BaseHandler):
     route = '^favicon.ico$'
 
     def render(self, request):
-        return serve(request, 'favicon.ico', 'static/icons')
+        print(staticfiles_storage.url('/static/icons/favicon.ico'))
+        return serve(request, 'favicon.ico', os.path.join(settings.BASE_DIR ,'static/icons'))
 
 
 class GoogleVerification(BaseHandler):
