@@ -4,7 +4,6 @@ from django_pluggableappsettings import AppSettings, Setting, IntSetting, String
 class SharkSettings(AppSettings):
     SHARK_PAGE_HANDLER = StringSetting('')
     SHARK_USE_STATIC_PAGES = Setting(True)
-    SHARK_STATIC_AMP = Setting(False)
     SHARK_GOOGLE_ANALYTICS_CODE = StringSetting('')
     CLOUDFLARE_CLIENT_IP_ENABLED = Setting(False)
     PROXY_HOPS = IntSetting(2)
