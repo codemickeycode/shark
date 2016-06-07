@@ -23,7 +23,7 @@ setup(
         'static/django_markdown/skins/simple/images/*.*',
         'templates/django_markdown/*.*',
     ]},
-    version = "0.3.147",
+    version = "0.3.148",
     description = "Django based bootstrap web framework",
     author = "Bart Jellema",
     author_email = "b@rtje.net",
