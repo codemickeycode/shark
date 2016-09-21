@@ -5,15 +5,21 @@ from collections import Iterable
 
 import bleach
 import markdown
+import pickle
 from django.conf import settings
 from django.contrib.staticfiles.storage import staticfiles_storage
+from django.core import signing
+from django.core.exceptions import FieldDoesNotExist
 from django.core.urlresolvers import reverse, get_resolver, RegexURLResolver, RegexURLPattern, NoReverseMatch
 from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect
+from django.middleware.csrf import get_token
 from django.shortcuts import render
 from django.test import Client
 from django.test import TestCase
 from django.utils.html import escape
+from django.utils.http import urlquote
 from django.utils.timezone import now
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.static import serve
 
 from shark import models
@@ -102,7 +108,6 @@ class BasePageHandler(BaseHandler):
         self.javascript = ''
 
         self.resources = Resources()
-        self.resources.add_resource('http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css', 'css', 'bootstrap', 'main')
 
         print('Handler created', now())
 
@@ -152,6 +157,9 @@ class BasePageHandler(BaseHandler):
 
 
     def render(self, request, *args, **kwargs):
+        #Always send the crsf token
+        get_token(request)
+
         self.request = request
         self.user = self.request.user
 
@@ -207,6 +215,10 @@ class BasePageHandler(BaseHandler):
 
             return HttpResponse(json_data)
 
+    def __iadd__(self, other):
+        self.base_object.append(other)
+        return self
+
     def append(self, *items):
         self.base_object.append(*items)
         if items:
@@ -245,42 +257,61 @@ class BasePageHandler(BaseHandler):
     def replace_resource_js(self, resource):
         return JS('$("#resource-{}-{}").attr("href", "{}").on("load", function(){{$(window).resize()}});'.format(resource.module, resource.name, resource.url))
 
-    # def _handle_form_post(self, *args, post_action='', form_data='', **kwargs):
-    #     form_data = {item.split('=', 1)[0]: item.split('=', 1)[1] for item in signing.loads(form_data).split('|')}
-    #     form_id = form_data['formid']
-    #     form_class_description = form_data['form']
-    #     form_class_name = re.match('(.*)\((.*)\)', form_class_description).group(1)
-    #     form_class_params = re.match('(.*)\((.*)\)', form_class_description).group(2)
-    #     form_error_class = form_data['formerror']
-    #
-    #     form = SharkForm.sub_classes[form_class_name]()
-    #     form.deserialize(form_class_params)
-    #     formerror = FormError.sub_classes[form_error_class](form_id)
-    #     form.setup_post(kwargs)
-    #
-    #     form._validate()
-    #     if not form.errors:
-    #         if post_action:
-    #             self.__getattribute__(post_action)(*args, form)
-    #         else:
-    #             form.save()
-    #     else:
-    #         renderer = Renderer()
-    #         for error in form.errors:
-    #             error_object = formerror
-    #             if error.field and ('fld-' + error.field.full_name) in form_data:
-    #                 error_object = FieldError.sub_classes[form_data['fld-' + error.field.full_name]](error.field.full_name)
-    #
-    #             if error_object:
-    #                 selector = "$('#{} .{}')".format(form_id, error_object.html_class_name)
-    #                 error_renderer = Renderer()
-    #                 error_object._render_error(error_renderer, error.message)
-    #                 self.javascript += JQ(selector, renderer=renderer).append_raw(error_renderer.html).js
-    #                 self.javascript += error_renderer.js
-    #             print(error.field, error.message)
-    #
-    #         renderer.render('', None)
-    #         self.javascript = renderer.js + self.javascript
+    def redirect(self, url):
+        self.add_javascript('window.location="{}"'.format(urlquote(url, ':/@')))
+
+    def _form_post(self, *args, **kwargs):
+        form_data = signing.loads(kwargs.pop('form_data'), serializer=lambda: pickle)
+        cls = form_data['cls']
+        print('FORM DATA', form_data)
+        action = self.__getattribute__(kwargs.pop('sub_action'))
+        form_error_handler = cls[form_data['err']]()
+
+        has_error = False
+        for field in kwargs:
+            if field in form_data['fld']:
+                fld = form_data['fld'][field]
+                value = kwargs[field]
+                for validator_class, data in fld['valid']:
+                    validator_instance = cls[validator_class]()
+                    validator_instance.deserialize(data)
+                    outcome = validator_instance.validate(value)
+
+                    if outcome is not None:
+                        has_error = True
+
+                        error_class, id = fld['err']
+                        field_error = cls[error_class](field)
+                        if isinstance(id, int):
+                            id = '{}_{}'.format(field_error.__class__.__name__, id)
+
+                        selector = '$("#{}")'.format(id)
+                        error_renderer = Renderer()
+                        field_error.render_error(error_renderer, outcome)
+                        self.javascript += JQ(selector).append_raw(error_renderer.html).js
+                        self.javascript += error_renderer.js
+
+        if has_error:
+            return
+        else:
+            if 'data' in form_data:
+                data_class, data_id = form_data['data']
+                if data_id:
+                    data = data_class.objects.get(id=data_id)
+                else:
+                    data = data_class()
+                fields = data._meta.get_fields()
+
+                for field_name in kwargs:
+                    try:
+                        field = data._meta.get_field(field_name)
+                        data.__setattr__(field_name, kwargs[field_name])
+                    except FieldDoesNotExist:
+                        pass #TODO: handle these
+
+                action(data)
+            else:
+                action(kwargs)
 
 
 def exists_or_404(value):

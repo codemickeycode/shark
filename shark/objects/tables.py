@@ -146,21 +146,14 @@ class TableHeadColumn(BaseObject):
 
 
 class TableRow(BaseObject):
-    def __init__(self, columns=Default, bss=(), **kwargs):
+    def __init__(self, columns=Default, action=None, **kwargs):
         self.init(kwargs)
         self.columns = self.param(columns, 'Collection', 'Columns in the table', Collection())
-        self.bss = self.param(bss, 'TableContextualStyle', 'BSS for table rows', TableContextualStyle.default)
-
-        if isinstance(self.bss, tuple):
-            for s in self.bss:
-                if not s == TableContextualStyle.default:
-                    self.add_class(TableContextualStyle.name(s))
-        elif isinstance(self.bss, int):
-            if not self.bss == TableContextualStyle.default:
-                self.add_class(TableContextualStyle.name(self.bss))
+        self.url = self.param(action, 'URL', 'Action to do when clicked')
 
     def get_html(self, html):
-        html.append(u'<tr' + self.base_attributes + u'>')
+        data_href = ' data-href="{}"'.format(self.url) if self.url else ''
+        html.append(u'<tr' + self.base_attributes + data_href + u'>')
         html.render(u'    ', self.columns)
         html.append(u'</tr>')
 
@@ -187,12 +180,7 @@ class TableColumn(BaseObject):
 
 
 
-def create_table(
-        data: 'Data for the table, can be a QuerySet or a list of dicts',
-        columns: 'A list of strings of the column names to display',
-        transforms: 'A dictionary of column names and functions that take the row as argument and return the text or objects to render' = None,
-        include_header: 'Include the table header' = True,
-        table_style: 'Optional table styles, such as condensed' = None) -> 'Table object for the data':
+def create_table(data, columns, transforms = None, include_header = True, row_actions = None, table_style = None):
     transforms = transforms or []
     table = Table(table_style=table_style)
     if data:
@@ -218,7 +206,11 @@ def create_table(
             get_function = lambda row, key: row[key]
 
         for row in data:
-            table_row = TableRow()
+            if row_actions:
+                table_row = TableRow(action=row_actions(row))
+            else:
+                table_row = TableRow()
+
             for field_name in field_names:
                 if field_name in transforms:
                     table_row.columns.append(TableColumn(transforms[field_name](row)))

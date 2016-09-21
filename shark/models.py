@@ -19,7 +19,9 @@ class SharkModel(Model):
             yield field_name
 
     @classmethod
-    def load(cls, pk):
+    def load(cls, pk=None):
+        if str(pk) in ['', '0', 'None']:
+            return cls()
         try:
             return cls.objects.get(pk=pk)
         except cls.DoesNotExist:

@@ -1,4 +1,7 @@
 function send_action(post_data) {
+    post_data.csrfmiddlewaretoken = csrf_token;
+    post_data.keep_variables = keep_variables;
+
     $.ajax({
         type: 'POST',
         url: window.location.href,
@@ -13,8 +16,6 @@ function send_action(post_data) {
 }
 
 function do_action(action, post_data) {
-    post_data.csrfmiddlewaretoken = csrf_token;
-    post_data.keep_variables = keep_variables;
     post_data.action = action;
     send_action(post_data);
 }
@@ -56,6 +57,17 @@ $(document).ready(function() {
         $(this).find("[data-autofocus]:first").focus();
     });
 
+    // Autofocus
     $("[data-autofocus]:first").focus();
+
+    // Turn forms into AJAX forms
     bind_forms();
+
+    // Make table rows with links on the entire row clickable
+    $('.table tr[data-href]').each(function(){
+        $(this).css('cursor','pointer').click( function(){
+                document.location = $(this).attr('data-href');
+            }
+        );
+    });
 });

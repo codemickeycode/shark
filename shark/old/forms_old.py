@@ -329,6 +329,7 @@ class Button(BaseObject):
                 self.add_class('active')
 
     button_type = 'button'
+
     def get_html(self, html):
         button_content = Collection()
         if self.glyph:

@@ -98,7 +98,6 @@ class BaseObject(object):
                 value = ''
             else:
                 value = urlquote(str(value, ':/@'))
-
         elif type == 'URL':
             if not value:
                 value = NoAction()
@@ -107,8 +106,7 @@ class BaseObject(object):
             elif isinstance(value, JQ):
                 value = JS(value.js)
             elif not isinstance(value, BaseAction):
-                logging.warning('Value is not a BaseAction or str.')
-                value = None
+                raise TypeError('Value is not a valid type for a URL')
         elif type == 'JS':
             if not value:
                 value = NoAction()
@@ -184,6 +182,8 @@ class BaseObject(object):
         for class_name in new_classes:
             if class_name not in existing_classes:
                 self.classes = (self.classes + ' ' + class_name)
+
+        self.classes = self.classes.strip()
 
     def add_attribute(self, attribute, value):
         if value is not None:
@@ -395,7 +395,7 @@ class Renderer:
         for parent in self.parents:
             if isinstance(parent, type):
                 return parent
-        raise KeyError('Cannot find {} in parents.'.format(type.__name__))
+        return None
 
     def add_resource(self, url, type, module, name=''):
         self.resources.add_resource(url, type, module, name)

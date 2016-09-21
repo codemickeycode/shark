@@ -31,7 +31,64 @@ def get_theme_resource(theme):
         return Resource('https://maxcdn.bootstrapcdn.com/bootswatch/3.3.6/{}/bootstrap.min.css'.format(BootswatchTheme.name(theme)), 'css', 'bootstrap', 'main')
 
 
-class Theme(BaseObject):
+
+class ThemeMeta(type):
+    @property
+    def cerulean(cls): return cls('cerulean')
+
+    @property
+    def cosmo(cls): return cls('cosmo')
+
+    @property
+    def custom(cls): return cls('custom')
+
+    @property
+    def cyborg(cls): return cls('cyborg')
+
+    @property
+    def darkly(cls): return cls('darkly')
+
+    @property
+    def flatly(cls): return cls('flatly')
+
+    @property
+    def journal(cls): return cls('journal')
+
+    @property
+    def lumen(cls): return cls('lumen')
+
+    @property
+    def paper(cls): return cls('paper')
+
+    @property
+    def readable(cls): return cls('readable')
+
+    @property
+    def sandstone(cls): return cls('sandstone')
+
+    @property
+    def readable(cls): return cls('readable')
+
+    @property
+    def simplex(cls): return cls('simplex')
+
+    @property
+    def slate(cls): return cls('slate')
+
+    @property
+    def spacelab(cls): return cls('spacelab')
+
+    @property
+    def superhero(cls): return cls('superhero')
+
+    @property
+    def united(cls): return cls('united')
+
+    @property
+    def yeti(cls): return cls('yeti')
+
+
+class Theme(BaseObject, metaclass=ThemeMeta):
     """
     Select a bootstrap Theme
     """

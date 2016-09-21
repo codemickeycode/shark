@@ -36,7 +36,7 @@ def icon(name, size=0,
 class Icon(BaseObject, Enumeration):
     """
     Icon from Font Awesome
-    See the [Font Awesome documentation](http://fortawesome.io/examples/) on ideas of how and where to use the various options.
+    See the [Font Awesome documentation](http://fontawesome.io/examples/) on ideas of how and where to use the various options.
     """
     def __init__(self, name=Default, size=0,
                  fixed_width=False,
@@ -93,6 +93,7 @@ class Icon(BaseObject, Enumeration):
             self.add_class(''.join(get_extra(self)))
             html.append('<span' + self.base_attributes + '></span>')
         else:
+            html.add_resource('http://maxcdn.bootstrapcdn.com/bootstrap/4.6.3/css/bootstrap.min.css', 'css', 'bootstrap', 'main')
             if not isinstance(self.stacked_on, Icon):
                 self.stacked_on = Icon(self.stacked_on)
             self.add_class('fa-stack')
