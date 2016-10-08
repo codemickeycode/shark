@@ -33,7 +33,7 @@ def get_urls():
     for app_name in apps:
         try:
             app = __import__(app_name + '.views').views
-        except ImportError:
+        except (ImportError, AttributeError):
             pass
         else:
             objs = [getattr(app, key) for key in dir(app)]
