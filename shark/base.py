@@ -218,6 +218,16 @@ class BaseObject(object):
             obj.insert(0, self)
             return obj
 
+    def __iadd__(self, other):
+        obj = objectify(other)
+        if not obj:
+            return self
+        elif isinstance(obj, BaseObject):
+            return Collection([self, obj])
+        elif isinstance(obj, Collection):
+            obj.insert(0, self)
+            return obj
+
     def replace_with(self, new_object):
         pass # For code completion
 
@@ -490,6 +500,13 @@ class Collection(list):
         return renderer
 
     def __add__(self, other):
+        obj = objectify(other)
+        if not obj:
+            return self
+        else:
+            return Collection(self, obj)
+
+    def __iadd__(self, other):
         obj = objectify(other)
         if not obj:
             return self

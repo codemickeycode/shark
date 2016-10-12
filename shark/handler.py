@@ -139,7 +139,7 @@ class BasePageHandler(BaseHandler):
         renderer.render('        ', content)
         print('End render', now(), renderer.render_count)
 
-        html = render(self.request, 'base.html', {
+        html = render(self.request, 'shark/base.html', {
                                   'title': self.title,
                                   'description': self.description.replace('"', '\''),
                                   'keywords': self.keywords,
