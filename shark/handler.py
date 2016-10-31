@@ -44,6 +44,9 @@ class BaseHandler:
     def __init__(self, *args, **kwargs):
         pass
 
+    def render_base(self, request):
+        return self.render(request)
+
     def render(self, request):
         raise Http404("Not Implemented")
 
@@ -168,7 +171,7 @@ class BasePageHandler(BaseHandler):
             if SharkSettings.SHARK_GOOGLE_ANALYTICS_CODE:
                 self.append(GoogleAnalyticsTracking(SharkSettings.SHARK_GOOGLE_ANALYTICS_CODE))
             try:
-                self.render_page(*args, **kwargs)
+                self.render_page(request, *args, **kwargs)
             except NotFound404:
                 raise Http404()
             else:
@@ -237,7 +240,7 @@ class BasePageHandler(BaseHandler):
         else:
             self.javascript = self.javascript + script
 
-    def render_page(self):
+    def render_page(self, request):
         raise NotImplementedError
 
     def text(self, name, default_txt=None):
@@ -360,7 +363,7 @@ class BaseContainerPageHandler(BasePageHandler):
 
 def shark_django_handler(request, *args, handler=None, **kwargs):
     handler_instance = handler()
-    outcome = handler_instance.render(request, *args, **kwargs)
+    outcome = handler_instance.render_base(request, *args, **kwargs)
     return outcome
 
 
