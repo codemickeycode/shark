@@ -1,3 +1,4 @@
+from django.db.models import Model
 from shark.base import BaseObject, Default
 
 
@@ -19,16 +20,21 @@ class Graph(BaseObject):
         renderer.add_resource('//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js', 'js', 'morris', 'main')
         renderer.add_resource('//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css', 'css', 'morris', 'main')
 
+        if len(self.data)>0 and isinstance(self.data[0], Model):
+            get_function = lambda row, key: row.__getattribute__(key)
+        else:
+            get_function = lambda row, key: row[key]
+
         data_points = []
         series_names = set()
         for row in self.data:
-            x_value = row[self.x_column]
+            x_value = get_function(row, self.x_column)
 
             values = ''
             series_name = 'a'
             for y_column in self.y_columns:
                 series_names.add(series_name)
-                values += ',' + series_name + ':"' + str(row[y_column]) + '"'
+                values += ',' + series_name + ':"' + str(get_function(row, y_column)) + '"'
                 series_name = chr(ord(series_name) + 1)
 
             data_points.append('{x:"' + str(x_value) + '"' + values + '}')
