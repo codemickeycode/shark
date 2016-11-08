@@ -44,8 +44,8 @@ class BaseHandler:
     def __init__(self, *args, **kwargs):
         pass
 
-    def render_base(self, request):
-        return self.render(request)
+    def render_base(self, request, *args, **kwargs):
+        return self.render(request, *args, **kwargs)
 
     def render(self, request):
         raise Http404("Not Implemented")
