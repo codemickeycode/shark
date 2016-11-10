@@ -139,8 +139,23 @@ class JQ(object):
             other._js_pre = self._js_pre + other._js_pre
             other._js_post = self._js_post + other._js_post
             return other
+        elif isinstance(other, BaseAction):
+            self._js_post += other.js
+            return self
         elif isinstance(other, str):
-            self._js_pre += other
+            self._js_post += other
+            return self
+        elif not other:
+            return self
+        else:
+            raise TypeError('Cannot concatenate JQ object {} with {}'.format(self, other.__class__.__name__))
+
+    def __radd__(self, other):
+        if isinstance(other, BaseAction):
+            self._js_pre = other.js + self._js_pre
+            return self
+        elif isinstance(other, str):
+            self._js_pre = other + self._js_pre
             return self
         elif not other:
             return self
