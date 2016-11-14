@@ -312,9 +312,9 @@ class BasePageHandler(BaseHandler):
                     except FieldDoesNotExist:
                         pass #TODO: handle these
 
-                action(data)
+                action(*args, data)
             else:
-                action(kwargs)
+                action(*args, kwargs)
 
 
 def exists_or_404(value):

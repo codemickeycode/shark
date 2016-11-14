@@ -189,6 +189,10 @@ class JQ(object):
         self._js_pre += '{}.attr("{}", {});'.format(self.obj_js, attr, json.dumps(value))
         return self
 
+    def val(self, value):
+        self._js_pre += '{}.val({});'.format(self.obj_js, json.dumps(value))
+        return self
+
     def html(self, content):
         if self.obj:
             variable = self.obj.add_variable(content)
