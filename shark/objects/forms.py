@@ -272,9 +272,40 @@ class TextField(BaseField):
         html.append('    ' + self.help_text)
         html.append('</span>')
 
-    @classmethod
-    def value_from_string(cls, str_value):
-        return str_value
+
+class BooleanField(BaseField):
+    def __init__(self,  name=None, label='', value=Default, **kwargs):
+        super().__init__(name, value, **kwargs)
+        self.label = self.param(label, 'string', 'Text of the label')
+
+    @ensure_formgroup
+    def get_html(self, html):
+        html.add_resource('https://cdnjs.cloudflare.com/ajax/libs/1000hz-bootstrap-validator/0.10.1/validator.min.js', 'js', 'validator', 'main')
+
+        form = html.find_parent(Form)
+        form.form_data['fld'][self.name] = {
+            'cls': form.form_data_class(self.__class__),
+            'valid': [(form.form_data_class(validator.__class__), validator.serialize()) for validator in self.validators]
+        }
+
+        if self.value == Default and form.data:
+            try:
+                field = form.data._meta.get_field(self.name)
+                self.value = form.data.__getattribute__(self.name)
+            except FieldDoesNotExist:
+                pass
+
+        if self.value:
+            self.add_attribute('checked', 'checked')
+
+        field_error = SpanBrFieldError(self.name)
+        html.append('<div class="checkbox">')
+        html.append('    <label>')
+        html.append('        <input type="checkbox"' + self.base_attributes + attr('name', self.name) + '>')
+        html.append('        ' + self.label)
+        html.append('    </label>')
+        field_error.get_html(html)
+        html.append('</div>')
 
 
 class EmailField(TextField):
