@@ -552,10 +552,11 @@ class Text(BaseObject):
 
 class Script(BaseObject):
     def __init__(self, script=None, **kwargs):
-        self.script = self.param(script, 'JQ', 'JQuery to execute')
+        self.init(kwargs)
+        self.script = self.param(script, 'JS', 'Javascript to execute')
 
     def get_html(self, html):
-        html.append_js(self.script.onclick)
+        html.append_js(self.script.js)
 
 
 # class ContextItemPattern(Pattern):

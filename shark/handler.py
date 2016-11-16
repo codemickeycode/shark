@@ -32,7 +32,7 @@ from shark.objects.navigation import NavLink
 from shark.objects.ui_elements import BreadCrumbs
 from shark.settings import SharkSettings
 from .base import Collection, BaseObject, PlaceholderWebObject, Default, ALLOWED_TAGS, ALLOWED_ATTRIBUTES, \
-    ALLOWED_STYLES, Markdown, Renderer
+    ALLOWED_STYLES, Markdown, Renderer, Script
 from .resources import Resources
 
 unique_name_counter = 0
@@ -233,12 +233,7 @@ class BasePageHandler(BaseHandler):
         self.append(Row(Div(args, classes='col-md-12'), **kwargs))
 
     def add_javascript(self, script):
-        if isinstance(script, BaseAction):
-            self.javascript += script.js
-        elif isinstance(script, JQ):
-            self.javascript += script.js
-        else:
-            self.javascript = self.javascript + script
+        self += Script(script)
 
     def render_page(self, request):
         raise NotImplementedError
