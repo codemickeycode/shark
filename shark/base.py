@@ -202,7 +202,7 @@ class BaseObject(object):
 
         return html.output()
 
-    def get_html(self, html):
+    def get_html(self, renderer):
         pass
 
     def serialize(self):
