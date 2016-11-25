@@ -375,7 +375,7 @@ def shark_django_redirect_handler(request, *args, handler=None, function=None, *
 
 
 class StaticPage(BasePageHandler):
-    def render_page(self, url_name):
+    def render_page(self, request, url_name):
         page = StaticPageModel.load(url_name)
         if not page:
             raise NotFound404()
