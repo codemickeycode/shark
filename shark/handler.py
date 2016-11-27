@@ -233,7 +233,10 @@ class BasePageHandler(BaseHandler):
         self.append(Row(Div(args, classes='col-md-12'), **kwargs))
 
     def add_javascript(self, script):
-        self += Script(script)
+        if self.request.method == 'GET':
+            self += Script(script)
+        else:
+            self.javascript += ';' + script
 
     def render_page(self, request):
         raise NotImplementedError
