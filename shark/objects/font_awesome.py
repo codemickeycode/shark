@@ -1,7 +1,9 @@
-from shark.base import Raw, Enumeration, BaseObject, Default
+from shark.base import  Enumeration, Object, Default, StringParam, BaseParamConverter
 from shark.common import LOREM_IPSUM
+from shark.objects.base import Raw
 from shark.objects.layout import Paragraph, multiple_div_row
 from shark.objects.text import Br
+from shark.param_converters import IntegerParam, BooleanParam
 
 
 def icon(name, size=0,
@@ -17,23 +19,38 @@ def icon(name, size=0,
          ):
     extra = ''
     if size:        extra += ' fa-{}'.format(['lg', '2x', '3x', '4x', '5x'][size])
-    if fixed_width: extra += 'fa-fw'
-    if border:      extra += 'fa-border'
-    if pull_left:   extra += 'fa-pull-left'
-    if pull_right:  extra += 'fa-pull-right'
-    if pull_right:  extra += 'fa-spin'
-    if pull_right:  extra += 'fa-pulse'
-    if rotate in [90, 180, 270]: extra += 'fa-rotate-{}'.format(rotate)
-    if flip_horizontal:  extra += 'fa-flip-horizontal'
-    if flip_vertical:  extra += 'fa-flip-vertical'
-
+    if fixed_width: extra += ' fa-fw'
+    if border:      extra += ' fa-border'
+    if pull_left:   extra += ' fa-pull-left'
+    if pull_right:  extra += ' fa-pull-right'
+    if pull_right:  extra += ' fa-spin'
+    if pull_right:  extra += ' fa-pulse'
+    if rotate in [90, 180, 270]: extra += ' fa-rotate-{}'.format(rotate)
+    if flip_horizontal:  extra += ' fa-flip-horizontal'
+    if flip_vertical:  extra += ' fa-flip-vertical'
 
     if isinstance(name, int):
         name = Icon.name(name)
     return Raw('<span class="fa fa-' + name.strip('_').replace('_', '-') + '{}"></span>'.format(extra))
 
 
-class Icon(BaseObject, Enumeration):
+class IconParam(BaseParamConverter):
+    @classmethod
+    def convert(cls, value, parent_object):
+        if value is None or isinstance(value, Icon):
+            return value
+        elif isinstance(value, int):
+            return Icon(Icon.name(value))
+        elif str(value) in Icon.str_map:
+            try:
+                return Icon(value)
+            except ValueError:
+                pass
+
+        raise TypeError('Parameter isn\'t of type int (Icon.???)')
+
+
+class Icon(Object, Enumeration):
     """
     Icon from Font Awesome
     See the [Font Awesome documentation](http://fontawesome.io/examples/) on ideas of how and where to use the various options.
@@ -56,36 +73,39 @@ class Icon(BaseObject, Enumeration):
             name = Icon.name(name)
 
         self.init(kwargs)
-        self.name = self.param(name, 'string', 'Name of the Font Awesome icon or you can use it like this: Icon.camera_retro', Icon.square)
-        self.size = self.param(size, 'int', 'Size of the icon. 1=33% larger, 2=2x the size, 3=3x the size, until 5x')
-        self.fixed_width = self.param(fixed_width, 'boolean', 'Fixed width icons for use in places like menus')
-        self.border = self.param(border, 'boolean', 'Add a rounded border around the icon')
-        self.pull_left = self.param(pull_left, 'boolean', 'Pull left. Useful for paragraph icons')
-        self.pull_right = self.param(pull_right, 'boolean', 'Pull left. Useful for paragraph icons')
-        self.spin = self.param(spin, 'boolean', 'Spin the icon. Great for use with `spinner`, `circle-o-notch`, `refresh` and `cog`')
-        self.pulse = self.param(pulse, 'boolean', 'Spin the icon in 8 steps')
-        self.rotate = self.param(rotate, 'boolean', 'Rotate the icon 90, 180 or 270 degrees. Other values are ignored.')
-        self.flip_horizontal = self.param(flip_horizontal, 'boolean', 'Flip the icon horizontally')
-        self.flip_vertical = self.param(flip_vertical, 'boolean', 'Flip the icon vertically')
-        self.inverse = self.param(inverse, 'boolean', 'Use an alternate icon color. Useful when stacking icons.')
-        self.stacked_on = self.param(stacked_on, 'Icon', 'Stack the icon on top of this icon. See example.')
-        self.stacked_on_top = self.param(stacked_on_top, 'boolean', 'Stack the larger icon on top of the smaller. Useful for icons like `ban`')
+        self.name = self.param(name, StringParam, 'Name of the Font Awesome icon or you can use it like this: Icon.camera_retro', Icon.square)
+        self.size = self.param(size, IntegerParam, 'Size of the icon. 1=33% larger, 2=2x the size, 3=3x the size, until 5x')
+        self.fixed_width = self.param(fixed_width, BooleanParam, 'Fixed width icons for use in places like menus')
+        self.border = self.param(border, BooleanParam, 'Add a rounded border around the icon')
+        self.pull_left = self.param(pull_left, BooleanParam, 'Pull left. Useful for paragraph icons')
+        self.pull_right = self.param(pull_right, BooleanParam, 'Pull left. Useful for paragraph icons')
+        self.spin = self.param(spin, BooleanParam, 'Spin the icon. Great for use with `spinner`, `circle-o-notch`, `refresh` and `cog`')
+        self.pulse = self.param(pulse, BooleanParam, 'Spin the icon in 8 steps')
+        self.rotate = self.param(rotate, BooleanParam, 'Rotate the icon 90, 180 or 270 degrees. Other values are ignored.')
+        self.flip_horizontal = self.param(flip_horizontal, BooleanParam, 'Flip the icon horizontally')
+        self.flip_vertical = self.param(flip_vertical, BooleanParam, 'Flip the icon vertically')
+        self.inverse = self.param(inverse, BooleanParam, 'Use an alternate icon color. Useful when stacking icons.')
+        self.stacked_on = self.param(stacked_on, IconParam, 'Stack the icon on top of this icon. See example.')
+        self.stacked_on_top = self.param(stacked_on_top, BooleanParam, 'Stack the larger icon on top of the smaller. Useful for icons like `ban`')
 
     def get_html(self, html):
-        def get_extra(icon):
+        html.add_resource('https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css', 'css',
+                          'font-awesome', 'main')
+
+        def get_extra(the_icon):
             extra = ''
             extra_icon = ''
             if self.size:        extra += ' fa-{}'.format(['lg', '2x', '3x', '4x', '5x'][self.size-1])
-            if icon.fixed_width: extra += ' fa-fw'
-            if icon.border:      extra += ' fa-border'
-            if icon.pull_left:   extra += ' fa-pull-left'
-            if icon.pull_right:  extra += ' fa-pull-right'
-            if icon.spin:        extra_icon += ' fa-spin'
-            if icon.pulse:       extra_icon += ' fa-pulse'
-            if icon.rotate in [90, 180, 270]: extra_icon += ' fa-rotate-{}'.format(self.rotate)
-            if icon.flip_horizontal:  extra_icon += ' fa-flip-horizontal'
-            if icon.flip_vertical:  extra_icon += ' fa-flip-vertical'
-            if icon.inverse:     extra_icon += ' fa-inverse'
+            if the_icon.fixed_width: extra += ' fa-fw'
+            if the_icon.border:      extra += ' fa-border'
+            if the_icon.pull_left:   extra += ' fa-pull-left'
+            if the_icon.pull_right:  extra += ' fa-pull-right'
+            if the_icon.spin:        extra_icon += ' fa-spin'
+            if the_icon.pulse:       extra_icon += ' fa-pulse'
+            if the_icon.rotate in [90, 180, 270]: extra_icon += ' fa-rotate-{}'.format(self.rotate)
+            if the_icon.flip_horizontal:  extra_icon += ' fa-flip-horizontal'
+            if the_icon.flip_vertical:  extra_icon += ' fa-flip-vertical'
+            if the_icon.inverse:     extra_icon += ' fa-inverse'
             return extra, extra_icon
 
         if not self.stacked_on:
@@ -93,7 +113,6 @@ class Icon(BaseObject, Enumeration):
             self.add_class(''.join(get_extra(self)))
             html.append('<span' + self.base_attributes + '></span>')
         else:
-            html.add_resource('http://maxcdn.bootstrapcdn.com/bootstrap/4.6.3/css/bootstrap.min.css', 'css', 'bootstrap', 'main')
             if not isinstance(self.stacked_on, Icon):
                 self.stacked_on = Icon(self.stacked_on)
             self.add_class('fa-stack')
@@ -113,7 +132,7 @@ class Icon(BaseObject, Enumeration):
             html.append('</span>')
 
     @classmethod
-    def example(self):
+    def example(cls):
         return multiple_div_row([
             Icon('comments', 1, fixed_width=True), 'Just an icon, there are 605 available.', Br(),
             Icon('rocket', 1, spin=True, fixed_width=True), 'Icon spinning', Br(),

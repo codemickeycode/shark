@@ -1,21 +1,22 @@
 import re
-
-from django.utils.http import urlencode
-
-from shark.base import BaseObject, Collection, Default, Enumeration, Raw
+from shark.base import Objects, Default, Enumeration, Object, StringParam
+from shark.dependancies import escape_url
+from shark.objects.base import Raw
 from shark.objects.layout import Panel, multiple_div_row, Paragraph
 from shark.objects.text import Anchor
+from shark.param_converters import BooleanParam, UrlParam, IntegerParam, ObjectsParam, JavascriptParam, FloatParam, \
+    CssAttributeParam, ListParam
 from shark.settings import SharkSettings
 
 
-class BreadCrumbs(BaseObject):
+class BreadCrumbs(Object):
     """
     Displays Breadcrumbs navigation. The non-keyword arguments are the crumbs. Add Anchors or simple text strings.
     """
     def __init__(self, *args, microdata=True, **kwargs):
         self.init(kwargs)
-        self.crumbs = Collection(args)
-        self.microdata = self.param(microdata, 'bool', 'Include microdata properties in the html. This might render the breadcrumbs in Google search results.')
+        self.crumbs = Objects(args)
+        self.microdata = self.param(microdata, BooleanParam, 'Include microdata properties in the html. This might render the breadcrumbs in Google search results.')
 
     def get_html(self, html):
         html.append('<ol class="breadcrumb"{}>'.format(' itemscope itemtype="http://schema.org/BreadcrumbList"' if self.microdata else ''))
@@ -33,7 +34,7 @@ class BreadCrumbs(BaseObject):
         html.append('</ol>')
 
     @classmethod
-    def example(self):
+    def example(cls):
         return BreadCrumbs(Anchor('Home', '/'), Anchor('Docs', '/docs'), 'BreadCrumbs')
 
 
@@ -44,17 +45,17 @@ class ImageShape(Enumeration):
     thumbnail = 3
 
 
-class Image(BaseObject):
+class Image(Object):
     """
     Displays an image.
     """
     def __init__(self, src='', alt='', responsive=True, shape=ImageShape.default, data_src='', **kwargs):
         self.init(kwargs)
-        self._src = self.param(src, 'url', 'Src (Url) of the image')
-        self.alt = self.param(alt, 'string', 'Alt for image')
-        self.responsive = self.param(responsive, 'responsive', 'Src (Url) of the image', '')
-        self.shape = self.param(shape, 'ImageShape', 'indicates the shape of the image')
-        self.data_src = self.param(data_src, 'url', 'data-src of the image')
+        self._src = self.param(src, UrlParam, 'Src (Url) of the image')
+        self.alt = self.param(alt, StringParam, 'Alt for image')
+        self.responsive = self.param(responsive, BooleanParam, 'Responsive image', '')
+        self.shape = self.param(shape, ImageShape, 'indicates the shape of the image')
+        self.data_src = self.param(data_src, UrlParam, 'data-src of the image')
         if self.shape:
             self.add_class('img-' + ImageShape.name(self.shape))
 
@@ -65,6 +66,8 @@ class Image(BaseObject):
             src = 'src="{}"'.format(self._src)
         elif self.data_src:
             src = 'data-src="{}"'.format(self.data_src)
+        else:
+            src = ''
 
         html.append('<img {}'.format(src) + ' alt="{}"'.format(self.alt) + self.base_attributes + '/>')
 
@@ -72,39 +75,39 @@ class Image(BaseObject):
         return self.jq.attr('src', src)
 
     @classmethod
-    def example(self):
+    def example(cls):
         return Image('/static/web/img/bart_bg.jpg', 'Niagara Falls', shape=ImageShape.rounded)
 
 
-class Thumbnail(BaseObject):
+class Thumbnail(Object):
     """
     Displays an image in a frame with a caption. Useful for lists of thumbnails.
     """
     def __init__(self, img_url='', width=None, height=None, alt='', items=Default, **kwargs):
         self.init(kwargs)
-        self.img_url = self.param(img_url, 'url', 'Link to the image')
-        self.width = self.param(width, 'css_attr', 'Image width')
-        self.height = self.param(height, 'css_attr', 'Image height')
-        self.alt = self.param(alt, 'string', 'Alt text')
-        self.items = self.param(items, 'Collection', 'Items under the image', Collection())
+        self.img_url = self.param(img_url, UrlParam, 'Link to the image')
+        self.width = self.param(width, CssAttributeParam, 'Image width')
+        self.height = self.param(height, CssAttributeParam, 'Image height')
+        self.alt = self.param(alt, StringParam, 'Alt text')
+        self.items = self.param(items, ObjectsParam, 'Items under the image', Objects())
         self.add_class('thumbnail')
 
     def get_html(self, html):
         style = ''
         if self.width:
-            style += u'width:' + str(self.width) + u';'
+            style += 'width:' + str(self.width) + ';'
         if self.height:
-            style += u'height:' + str(self.height) + u';'
+            style += 'height:' + str(self.height) + ';'
 
-        html.append(u'<div' + self.base_attributes + '>')
-        html.append(u'    <img src="' + self.img_url + u'" alt="' + self.alt + '"' + (' style="' + style + '"' if style else '') + '>')
-        html.append(u'    <div class="caption">')
-        html.render(u'        ', self.items)
-        html.append(u'    </div>')
-        html.append(u'</div>')
+        html.append('<div' + self.base_attributes + '>')
+        html.append('    <img src="' + self.img_url.url + '" alt="' + self.alt + '"' + (' style="' + style + '"' if style else '') + '>')
+        html.append('    <div class="caption">')
+        html.render('        ', self.items)
+        html.append('    </div>')
+        html.append('</div>')
 
     @classmethod
-    def example(self):
+    def example(cls):
         return multiple_div_row(
             Thumbnail('/static/web/img/bart.jpg', width='100%', items='Bart'),
             Thumbnail('/static/web/img/dylan.jpg', width='100%', items='Dylan'),
@@ -112,10 +115,10 @@ class Thumbnail(BaseObject):
         )
 
 
-class Progress(BaseObject):
+class Progress(Object):
     def __init__(self, percentage=0, **kwargs):
         self.init(kwargs)
-        self.percentage = self.param(percentage, 'int', 'Percentage value')
+        self.percentage = self.param(percentage, IntegerParam, 'Percentage value')
 
     def get_html(self, html):
         html.append('<div class="progress">')
@@ -125,14 +128,14 @@ class Progress(BaseObject):
         html.append('</div>')
 
     @classmethod
-    def example(self):
+    def example(cls):
         return Progress(85)
 
 
-class Address(BaseObject):
+class Address(Object):
     def __init__(self, items=Default, **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'Items in Address', Collection())
+        self.items = self.param(items, ObjectsParam, 'Items in Address', Objects())
 
     def get_html(self, html):
         html.append('<address>')
@@ -140,13 +143,13 @@ class Address(BaseObject):
         html.append('</address>')
 
 
-class Carousel(BaseObject):
+class Carousel(Object):
     """
     Creates a Bootstrap carousel.
     """
     def __init__(self, slides=Default, **kwargs):
         self.init(kwargs)
-        self.slides = self.param(slides, 'list', 'List of slides.', [])
+        self.slides = self.param(slides, ListParam, 'List of slides.', [])
         self.id_needed()
 
     def get_html(self, html):
@@ -180,7 +183,7 @@ class Carousel(BaseObject):
         html.append_js('$("#{}").carousel()'.format(self.id))
 
     @classmethod
-    def example(self):
+    def example(cls):
         return Carousel([
             Image('/static/web/img/bart_bg.jpg'),
             Image('/static/web/img/dylan_bg.jpg'),
@@ -188,12 +191,12 @@ class Carousel(BaseObject):
         ])
 
 
-class Tab(BaseObject):
-    def __init__(self, name='', items='', active=False, **kwargs):
+class Tab(Object):
+    def __init__(self, name=None, items=None, active=False, **kwargs):
         self.init(kwargs)
-        self.name = self.param(name, 'Collection', 'Name of the tab')
-        self.items = self.param(items, 'Collection', 'Content of the tab')
-        self.active = self.param(active, 'boolean', 'Make this the active tab. Defaults to the first tab')
+        self.name = self.param(name, ObjectsParam, 'Name of the tab')
+        self.items = self.param(items, ObjectsParam, 'Content of the tab')
+        self.active = self.param(active, BooleanParam, 'Make this the active tab. Defaults to the first tab')
         self.id_needed()
 
     def get_html(self, html):
@@ -202,10 +205,10 @@ class Tab(BaseObject):
         html.append('</div>')
 
 
-class Tabs(BaseObject):
+class Tabs(Object):
     def __init__(self, tabs=None, **kwargs):
         self.init(kwargs)
-        self.tabs = self.param(tabs, 'Collection', 'The list of Tab objects')
+        self.tabs = self.param(tabs, ObjectsParam, 'The list of Tab objects')
         self.id_needed()
 
     def get_html(self, html):
@@ -248,10 +251,10 @@ class Tabs(BaseObject):
         ])
 
 
-class CloseIcon(BaseObject):
+class CloseIcon(Object):
     def __init__(self, js=None, **kwargs):
         self.init(kwargs)
-        self.js = self.param(js, 'JS', 'Action when the the close icon is clicked')
+        self.js = self.param(js, JavascriptParam, 'Action when the the close icon is clicked')
 
     def get_html(self, html):
         html.append('<button type="button"' + self.base_attributes + self.js.onclick + ' class="close" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
@@ -259,11 +262,11 @@ class CloseIcon(BaseObject):
     @classmethod
     def example(cls):
         panel = Panel('Hello world')
-        panel.append(CloseIcon(panel.jq.fadeOut().fadeIn()))
+        panel += CloseIcon(panel.jq.fadeOut().fadeIn())
         return panel
 
 
-class Caret(BaseObject):
+class Caret(Object):
     """
     Adds a caret. See the example.
     """
@@ -274,15 +277,15 @@ class Caret(BaseObject):
         html.append('<span class="caret"></span>')
 
 
-class Video(BaseObject):
+class Video(Object):
     """
     Embed a video with the HTML video tag
     """
     def __init__(self, urls=Default, auto_play=False, aspect_ratio=0.5625, **kwargs):
         self.init(kwargs)
-        self.urls = self.param(urls, 'list', 'List of urls of different versions of the video', [])
-        self.auto_play = self.param(auto_play, 'boolean', 'Start the video automatically on load?')
-        self.aspect_ratio = self.param(aspect_ratio, 'float', 'Aspect of video, used for iframed videos in fluid layouts')
+        self.urls = self.param(urls, ListParam, 'List of urls of different versions of the video', [])
+        self.auto_play = self.param(auto_play, BooleanParam, 'Start the video automatically on load?')
+        self.aspect_ratio = self.param(aspect_ratio, FloatParam, 'Aspect of video, used for iframed videos in fluid layouts')
 
     def get_html(self, html):
         self.id_needed()
@@ -313,7 +316,7 @@ class Video(BaseObject):
         return Video(urls='http://www.sample-videos.com/video/mp4/240/big_buck_bunny_240p_1mb.mp4')
 
 
-class GoogleMaps(BaseObject):
+class GoogleMaps(Object):
     """
     Render a Google Maps map.
 
@@ -322,24 +325,24 @@ class GoogleMaps(BaseObject):
     """
     def __init__(self, location='', width='100%', height='250px', **kwargs):
         self.init(kwargs)
-        self.location = self.param(location, 'string', 'Location name or "long, lat"')
-        self.width = self.param(width, 'css', 'Width of the map in px or %')
-        self.height = self.param(height, 'css', 'Height of the map in px or %')
+        self.location = self.param(location, StringParam, 'Location name or "long, lat"')
+        self.width = self.param(width, CssAttributeParam, 'Width of the map in px or %')
+        self.height = self.param(height, CssAttributeParam, 'Height of the map in px or %')
 
     def get_html(self, html):
-        html.append('<iframe' + self.base_attributes + ' width="{}" height="{}" frameborder="0" style="border:0" src="https://www.google.com/maps/embed/v1/place?key={}&{}" allowfullscreen></iframe>'.format(self.width, self.height, SharkSettings.SHARK_GOOGLE_BROWSER_API_KEY, urlencode({'q': self.location})))
+        html.append('<iframe' + self.base_attributes + ' width="{}" height="{}" frameborder="0" style="border:0" src="https://www.google.com/maps/embed/v1/place?key={}&q={}" allowfullscreen></iframe>'.format(self.width, self.height, SharkSettings.SHARK_GOOGLE_BROWSER_API_KEY, self.location))
 
     @classmethod
     def example(cls):
         return GoogleMaps('Fukuoka, Japan')
 
 
-class SearchBox(BaseObject):
+class SearchBox(Object):
     def __init__(self, name='Search', button_name=Raw('<span class="glyphicon glyphicon-search"></span>'), url='/search', **kwargs):
         self.init(kwargs)
-        self.name = self.param(name, 'string', 'Placeholder text')
-        self.button_name = self.param(button_name, 'Collection', 'Text on the search button')
-        self.url = self.param(url, 'url', 'Search URL')
+        self.name = self.param(name, StringParam, 'Placeholder text')
+        self.button_name = self.param(button_name, ObjectsParam, 'Text on the search button')
+        self.url = self.param(url, UrlParam, 'Search URL')
         self.add_class('form-inline')
 
     def get_html(self, html):
@@ -355,13 +358,13 @@ class SearchBox(BaseObject):
         html.append('</form>')
 
 
-class Parallax(BaseObject):
+class Parallax(Object):
     def __init__(self, background_url='', items=Default, speed=3, **kwargs):
         self.init(kwargs)
-        self.background_url = self.param(background_url, 'url', 'URL to the background image')
-        self.items = self.param(items, 'Collection', 'The items in the section', Collection())
-        self.speed = self.param(speed, 'float', 'The speed of the parallax, higher numbers is slower. 1 is normal page speed, 2 is half speed, etc.')
-        self.style += 'background: url({}) 50% 0/100% fixed; height: auto; margin: 0 auto; width: 100%; position: relative;'.format(self.background_url)
+        self.background_url = self.param(background_url, UrlParam, 'URL to the background image')
+        self.items = self.param(items, ObjectsParam, 'The items in the section', Objects())
+        self.speed = self.param(speed, FloatParam, 'The speed of the parallax, higher numbers is slower. 1 is normal page speed, 2 is half speed, etc.')
+        self.add_style('background: url({}) 50% 0/100% fixed; height: auto; margin: 0 auto; width: 100%; position: relative;'.format(self.background_url))
         self.id_needed()
 
     def get_html(self, html):
@@ -372,13 +375,13 @@ class Parallax(BaseObject):
         html.append_js("var scroll = $('#" + self.id + "'); $(window).scroll(function() {scroll.css({ backgroundPosition: '50% ' + (-($(window).scrollTop() / " + str(self.speed) + ")) + 'px' })});")
 
 
-class Feature(BaseObject):
+class Feature(Object):
     def __init__(self, heading=None, explanation=None, demonstration=None, flipped=False, **kwargs):
         self.init(kwargs)
-        self.heading = self.param(heading, 'Collection', 'Heading for the feature')
-        self.explanation = self.param(explanation, 'Collection', 'Explanation of the feature')
-        self.demonstration = self.param(demonstration, 'Collection', 'Something do demonstrate the feature, such as an image')
-        self.flipped = self.param(flipped, 'boolean', 'Flip the explanation and demonstation. It looks good to alternate between features.')
+        self.heading = self.param(heading, ObjectsParam, 'Heading for the feature')
+        self.explanation = self.param(explanation, ObjectsParam, 'Explanation of the feature')
+        self.demonstration = self.param(demonstration, ObjectsParam, 'Something do demonstrate the feature, such as an image')
+        self.flipped = self.param(flipped, BooleanParam, 'Flip the explanation and demonstation. It looks good to alternate between features.')
 
     def get_html(self, html):
         def explanation():

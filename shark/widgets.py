@@ -5,7 +5,7 @@ import os
 from django import forms
 from django.contrib.admin.widgets import AdminTextareaWidget
 from django.core.urlresolvers import reverse
-from django.template import loader, Context
+from django.template import Context
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 

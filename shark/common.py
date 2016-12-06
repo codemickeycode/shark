@@ -1,6 +1,7 @@
 from collections import Iterable
 from django.http import Http404
 
+Default = object()
 
 def iif(condition, value_true, value_false=''):
     return value_true if condition else value_false

@@ -1,7 +1,9 @@
 from collections import Iterable
 
-from shark.base import BaseObject, Default, Collection, Enumeration
-from shark.resources import Resources, Resource
+from shark.base import Object, Default, Objects, Enumeration
+from shark.objects.enumerations import QuickFloat
+from shark.param_converters import ObjectsParam, BooleanParam, IntegerParam
+from shark.resources import Resource
 
 
 class BootswatchTheme(Enumeration):
@@ -29,7 +31,6 @@ def get_theme_resource(theme):
         return Resource('https://maxcdn.bootstrapcdn.com/bootswatch/3.3.6/{}/bootstrap.min.css'.format(theme), 'css', 'bootstrap', 'main')
     else:
         return Resource('https://maxcdn.bootstrapcdn.com/bootswatch/3.3.6/{}/bootstrap.min.css'.format(BootswatchTheme.name(theme)), 'css', 'bootstrap', 'main')
-
 
 
 class ThemeMeta(type):
@@ -88,19 +89,20 @@ class ThemeMeta(type):
     def yeti(cls): return cls('yeti')
 
 
-class Theme(BaseObject, metaclass=ThemeMeta):
+class Theme(Object, metaclass=ThemeMeta):
     """
     Select a bootstrap Theme
     """
-    def __init__(self, theme_name='cerulean', **kwargs):
+    def __init__(self, theme='cerulean', **kwargs):
         self.init(kwargs)
-        self.theme_name = self.param(theme_name, 'string', 'Name of the theme')
+        self.theme = self.param(theme, BootswatchTheme, 'The theme')
 
     def get_html(self, html):
-        html.replace_resource('https://maxcdn.bootstrapcdn.com/bootswatch/3.3.6/{}/bootstrap.min.css'.format(self.theme_name), 'css', 'bootstrap', 'main')
+        theme_name = BootswatchTheme.name(self.theme)
+        html.replace_resource('https://maxcdn.bootstrapcdn.com/bootswatch/3.3.6/{}/bootstrap.min.css'.format(theme_name), 'css', 'bootstrap', 'main')
 
 
-class Br(BaseObject):
+class Br(Object):
     """
     Creates the &lt;br/&gt; html tag.
     """
@@ -115,13 +117,13 @@ class Br(BaseObject):
         return ['First line', Br(), 'Second line']
 
 
-class Row(BaseObject):
+class Row(Object):
     """
     A Bootstrap Row.
     """
-    def __init__(self, items=Default,  **kwargs):
+    def __init__(self, items=None,  **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'Items in the row', Collection())
+        self.items = self.param(items, ObjectsParam, 'Items in the row')
         self.add_class('row')
 
     def get_html(self, html):
@@ -142,16 +144,16 @@ class ParagraphStyle(Enumeration):
 
     @classmethod
     def name(cls, value):
-        return 'text-' + super(ParagraphStyle, cls).name(value)
+        return 'text-' + cls.name(value)
 
 
-class Paragraph(BaseObject):
+class Paragraph(Object):
     """
     Add a paragraph.
     """
-    def __init__(self, items=Default, **kwargs):
+    def __init__(self, items=None, **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'Content of the paragraph', Collection())
+        self.items = self.param(items, ObjectsParam, 'Content of the paragraph')
 
     def get_html(self, html):
         html.append('<p' + self.base_attributes + '>')
@@ -159,7 +161,7 @@ class Paragraph(BaseObject):
         html.append('</p>')
 
     @classmethod
-    def example(self):
+    def example(cls):
         return Paragraph("This is a paragraph of text.")
 
 
@@ -167,79 +169,69 @@ class Lead(Paragraph):
     """
     Create a Bootstrap Lead.
     """
-    def __init__(self, items=Default, **kwargs):
-        super(Lead, self).__init__(items, **kwargs)
+    def __init__(self, items=None, **kwargs):
+        super().__init__(items, **kwargs)
         self.add_class('lead')
 
     @classmethod
-    def example(self):
+    def example(cls):
         return Lead("This is a Bootstrap Lead.")
 
 
-class Footer(BaseObject):
+class Footer(Object):
     """
     A footer.
     """
-    def __init__(self, items=Default, **kwargs):
+    def __init__(self, items=None, **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'Items in the <footer>', Collection())
+        self.items = self.param(items, ObjectsParam, 'Items in the <footer>', Objects())
 
     def get_html(self, html):
-        html.append(u'<footer ' + self.base_attributes + '>')
-        html.render(u'    ', self.items)
-        html.append(u'</footer>')
+        html.append('<footer ' + self.base_attributes + '>')
+        html.render('    ', self.items)
+        html.append('</footer>')
 
     @classmethod
-    def example(self):
+    def example(cls):
         return Footer("This is a footer.")
 
 
-class Panel(BaseObject):
+class Panel(Object):
     """
     A Basic Panel.
     """
-    def __init__(self, items=Default, header=Default, **kwargs):
+    def __init__(self, items=None, header=None, **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'Items in the panel', Collection())
-        self.header = self.param(header, 'Collection', 'Header of the panel', Collection())
-        self.classes = (self.classes + ' panel panel-default').strip()
+        self.items = self.param(items, ObjectsParam, 'Items in the panel', Objects())
+        self.header = self.param(header, ObjectsParam, 'Header of the panel', Objects())
+        self.add_class('panel panel-default')
 
     def get_html(self, html):
-        html.append(u'<div' + self.base_attributes+ '>')
+        html.append('<div' + self.base_attributes + '>')
         if self.header:
             html.append('    <div class="panel-heading">')
             html.inline_render(self.header)
             html.append('    </div>')
-        html.append(u'    <div class="panel-body">')
-        html.render(u'        ', self.items)
-        html.append(u'    </div>')
-        html.append(u'</div>')
+        html.append('    <div class="panel-body">')
+        html.render('        ', self.items)
+        html.append('    </div>')
+        html.append('</div>')
 
     @classmethod
-    def example(self):
+    def example(cls):
         return Panel("This is a Panel.")
 
 
-class QuickFloat(Enumeration):
-    default = 0
-    left = 1
-    right = 2
-
-    @classmethod
-    def name(cls, value):
-        return ('pull-' + super(QuickFloat, cls).name(value)) if value else ''
-
-
-class Div(BaseObject):
+class Div(Object):
     """
     A flexible &lt;div&gt; element.
     """
-    def __init__(self, items=Default, quick_float=QuickFloat.default, centered=False, clearfix=False, **kwargs):
+    def __init__(self, items=None, quick_float=None, centered=False, clearfix=False, **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'Items in the row', Collection())
-        self.quick_float = self.param(quick_float, 'QuickFloat', 'Quick float to pull div left or right')
-        self.centered = self.param(centered, 'boolean', 'Whether the div is center block')
-        self.clearfix = self.param(clearfix, 'boolean', 'indicates whether to use clearfix')
+        self.items = self.param(items, ObjectsParam, 'Items in the row', Objects())
+        self.quick_float = self.param(quick_float, QuickFloat, 'Quick float to pull div left or right')
+        self.centered = self.param(centered, BooleanParam, 'Whether the div is center block')
+        self.clearfix = self.param(clearfix, BooleanParam, 'indicates whether to use clearfix')
         if self.quick_float:
             self.add_class(QuickFloat.name(self.quick_float))
         if self.centered:
@@ -253,76 +245,76 @@ class Div(BaseObject):
         html.append('</div>')
 
     @classmethod
-    def example(self):
+    def example(cls):
         return Div('Content of the Div', quick_float=QuickFloat.right)
 
 
-class Span(BaseObject):
+class Span(Object):
     def __init__(self, text=Default, **kwargs):
         self.init(kwargs)
-        self.text = self.param(text, 'Collection', 'The text', '')
-        self.tag = u'span'
+        self.text = self.param(text, ObjectsParam, 'The text', '')
+        self.tag = 'span'
 
     def get_html(self, html):
         html.append('<' + self.tag + self.base_attributes + '>')
         html.inline_render(self.text)
-        html.append('</' + self.tag + u'>')
+        html.append('</' + self.tag + '>')
 
     @classmethod
-    def example(self):
+    def example(cls):
         return Span('Text in the <span>...')
 
 
-class Spacer(BaseObject):
+class Spacer(Object):
     """
     Add some vertical spacing to your layout.
     """
     def __init__(self, pixels=20, **kwargs):
         self.init(kwargs)
-        self.pixels = self.param(pixels, 'int', 'Vertical spacing in pixels')
+        self.pixels = self.param(pixels, IntegerParam, 'Vertical spacing in pixels')
 
     def get_html(self, html):
         html.append('<div' + self.base_attributes + ' style="height:{}px;"></div>'.format(self.pixels))
 
     @classmethod
-    def example(self):
-        return Collection(
+    def example(cls):
+        return Objects(
             Paragraph('First paragraph...'),
             Spacer(40),
             Paragraph('Second paragraph after extra space.')
         )
 
 
-class Main(BaseObject):
+class Main(Object):
     """
     Adds a &lt;main&gt; section.
     """
     def __init__(self, items=Default, **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'Items in the <main>', Collection())
+        self.items = self.param(items, ObjectsParam, 'Items in the <main>', Objects())
 
     def get_html(self, html):
-        html.append(u'<main' + self.base_attributes + u'>')
+        html.append('<main' + self.base_attributes + '>')
         html.render('    ', self.items)
-        html.append(u'</main>')
+        html.append('</main>')
 
 
-class Jumbotron(BaseObject):
+class Jumbotron(Object):
     """
     Create a Bootstrap Jumbotron.
     """
     def __init__(self, items=Default, **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'Items in the container', Collection())
+        self.items = self.param(items, ObjectsParam, 'Items in the container', Objects())
         self.add_class('jumbotron')
 
     def get_html(self, html):
-        html.append(u'<div' + self.base_attributes + '>')
-        html.render(u'    ', self.items)
-        html.append(u'</div>')
+        html.append('<div' + self.base_attributes + '>')
+        html.render('    ', self.items)
+        html.append('</div>')
 
     @classmethod
-    def example(self):
+    def example(cls):
         return Jumbotron("Check this out!")
 
 
@@ -337,12 +329,12 @@ def multiple_panel_row(*content_collections):
         classes = "col-md-3 col-sm-6"
     else:
         classes = "col-md-4 col-sm-6"
-    row = Row([Div(Panel(content), classes=classes) for content in content_collections])
+    row = Row([Div(Panel(content), _class=classes) for content in content_collections])
     return row
 
 
 def multiple_div_row(*content_collections, support_iterable=True, **kwargs):
-    if support_iterable and len(content_collections)==1 and not isinstance(content_collections, str) and isinstance(content_collections, Iterable):
+    if support_iterable and len(content_collections) == 1 and not isinstance(content_collections, str) and isinstance(content_collections, Iterable):
         content_collections = content_collections[0]
 
     if len(content_collections) == 1:
@@ -355,7 +347,7 @@ def multiple_div_row(*content_collections, support_iterable=True, **kwargs):
         div_classes = "col-md-3 col-sm-6"
     else:
         div_classes = "col-md-4 col-sm-6"
-    row = Row([Div(content, classes=div_classes) for content in content_collections], **kwargs)
+    row = Row([Div(content, _class=div_classes) for content in content_collections], **kwargs)
     return row
 
 

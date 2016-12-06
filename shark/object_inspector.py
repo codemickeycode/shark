@@ -1,5 +1,5 @@
 import inspect
-from shark.base import BaseObject, Default
+from shark.base import Object, Default
 from shark.common import iif
 
 
@@ -11,7 +11,7 @@ class ObjectInspector(object):
 
         for key in dir(mod):
             obj = getattr(mod, key)
-            if inspect.isclass(obj) and issubclass(obj, BaseObject) and key != 'BaseObject' and inspect.getfile(obj)==filename:
+            if inspect.isclass(obj) and issubclass(obj, Object) and key != 'Object' and inspect.getfile(obj)==filename:
 
                 parameters = [p for p in inspect.signature(obj.__init__).parameters][1:]
                 param_info = []

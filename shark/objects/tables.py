@@ -1,7 +1,8 @@
 from collections import Iterable
 from django.db.models import Model
 
-from shark.base import Enumeration, BaseObject, Default, Collection
+from shark.base import Enumeration, Object, Default, Objects, StringParam
+from shark.param_converters import ObjectsParam, UrlParam, IntegerParam
 
 
 class TableStyle(Enumeration):
@@ -21,53 +22,7 @@ class TableContextualStyle(Enumeration):
     danger = 5
 
 
-# class Table(BaseObject):
-#     """
-#     Renders a complete table from a dataset
-#     """
-#     def __init__(self):
-#         data: 'Data for the table, can be a QuerySet or a list of dicts',
-#         columns: 'A list of strings of the column names to display',
-#         transforms: 'A dictionary of column names and functions that take the row as argument and return the text or objects to render' = None,
-#         include_header: 'Include the table header' = True,
-#         table_style: 'Optional table styles, such as condensed' = None) -> 'Table object for the data':
-#     transforms = transforms or []
-#     table = Table(table_style=table_style)
-#     if data:
-#         if include_header:
-#             table.head = TableHead()
-#
-#         field_names = []
-#         for column_name in columns:
-#             if '=' in column_name:
-#                 column_name, field_name = column_name.split('=')
-#             else:
-#                 field_name = column_name
-#             field_names.append(field_name)
-#
-#             if include_header:
-#                 table.head.columns.append(TableHeadColumn(column_name))
-#
-#         if len(data)>0 and isinstance(data[0], Model):
-#             in_function = lambda row: dir(row)
-#             get_function = lambda row, key: row.__getattribute__(key)
-#         else:
-#             in_function = lambda row:row
-#             get_function = lambda row, key: row[key]
-#
-#         for row in data:
-#             table_row = TableRow()
-#             for field_name in field_names:
-#                 if field_name in transforms:
-#                     table_row.columns.append(TableColumn(transforms[field_name](row)))
-#                 elif field_name.lower() in in_function(row):
-#                     value = get_function(row, field_name.lower())
-#                     table_row.columns.append(TableColumn(value if isinstance(value, str) else str(value)))
-#             table.rows.append(table_row)
-#
-
-
-class Table(BaseObject):
+class Table(Object):
     """
     Creates the table element.
 
@@ -75,9 +30,9 @@ class Table(BaseObject):
     """
     def __init__(self, head=None, rows=Default, table_style=None, **kwargs):
         self.init(kwargs)
-        self.head = self.param(head, 'TableHead', 'Table Header')
-        self.rows = self.param(rows, 'Collection', 'Rows in the table', Collection())
-        self.table_style = self.param(table_style, 'TableStyle', 'Style for the table')
+        self.head = self.param(head, TableHead, 'Table Header')
+        self.rows = self.param(rows, ObjectsParam, 'Rows in the table', Objects())
+        self.table_style = self.param(table_style, TableStyle, 'Style for the table')
         self.add_class('table')
         if isinstance(self.table_style, str):
             self.add_class('table-' + self.table_style)
@@ -90,12 +45,12 @@ class Table(BaseObject):
                 self.add_class('table-' + TableStyle.name(self.table_style))
 
     def get_html(self, html):
-        html.append(u'<table' + self.base_attributes + '>')
-        html.render(u'    ', self.head)
-        html.append(u'    <tbody>')
-        html.render(u'    ', self.rows)
-        html.append(u'    </tbody>')
-        html.append(u'</table>')
+        html.append('<table' + self.base_attributes + '>')
+        html.render('    ', self.head)
+        html.append('    <tbody>')
+        html.render('    ', self.rows)
+        html.append('    </tbody>')
+        html.append('</table>')
 
     @classmethod
     def example(cls):
@@ -118,53 +73,53 @@ class Table(BaseObject):
             ]
         )
 
-class TableHead(BaseObject):
+class TableHead(Object):
     def __init__(self, columns=Default, **kwargs):
         self.init(kwargs)
-        self.columns = self.param(columns, 'Collection', 'Columns in the table', Collection())
+        self.columns = self.param(columns, ObjectsParam, 'Columns in the table', Objects())
 
     def get_html(self, html):
-        html.append(u'<thead ' + self.base_attributes + u'><tr>')
-        html.render(u'    ', self.columns)
-        html.append(u'</tr></thead>')
+        html.append('<thead ' + self.base_attributes + '><tr>')
+        html.render('    ', self.columns)
+        html.append('</tr></thead>')
 
 
-class TableHeadColumn(BaseObject):
+class TableHeadColumn(Object):
     def __init__(self, items=Default, colspan=0, rowspan=0, **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'Content of the column', Collection())
-        self.colspan = self.param(colspan, 'string', 'Columns the cell spans')
-        self.rowspan = self.param(rowspan, 'string', 'Rows the cell spans')
+        self.items = self.param(items, ObjectsParam, 'Content of the column', Objects())
+        self.colspan = self.param(colspan, StringParam, 'Columns the cell spans')
+        self.rowspan = self.param(rowspan, StringParam, 'Rows the cell spans')
 
         self.add_attribute('colspan', self.colspan)
         self.add_attribute('rowspan', self.rowspan)
 
     def get_html(self, html):
-        html.append(u'<th' + self.base_attributes + '>')
-        html.render(u'    ', self.items)
-        html.append(u'</th>')
+        html.append('<th' + self.base_attributes + '>')
+        html.render('    ', self.items)
+        html.append('</th>')
 
 
-class TableRow(BaseObject):
+class TableRow(Object):
     def __init__(self, columns=Default, action=None, **kwargs):
         self.init(kwargs)
-        self.columns = self.param(columns, 'Collection', 'Columns in the table', Collection())
-        self.url = self.param(action, 'URL', 'Action to do when clicked')
+        self.columns = self.param(columns, ObjectsParam, 'Columns in the table', Objects())
+        self.url = self.param(action, UrlParam, 'Action to do when clicked')
 
     def get_html(self, html):
         data_href = ' data-href="{}"'.format(self.url) if self.url else ''
-        html.append(u'<tr' + self.base_attributes + data_href + u'>')
-        html.render(u'    ', self.columns)
-        html.append(u'</tr>')
+        html.append('<tr' + self.base_attributes + data_href + '>')
+        html.render('    ', self.columns)
+        html.append('</tr>')
 
 
-class TableColumn(BaseObject):
+class TableColumn(Object):
     def __init__(self, items=Default, colspan=0, rowspan=0, align='', **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'Content of the column', Collection())
-        self.colspan = self.param(colspan, 'int', 'Span number of columns')
-        self.rowspan = self.param(rowspan, 'int', 'Span number of rows')
-        self.align = self.param(align, 'string', 'Align left, right or center')
+        self.items = self.param(items, ObjectsParam, 'Content of the column', Objects())
+        self.colspan = self.param(colspan, IntegerParam, 'Span number of columns')
+        self.rowspan = self.param(rowspan, IntegerParam, 'Span number of rows')
+        self.align = self.param(align, StringParam, 'Align left, right or center')
 
         self.add_attribute('colspan', self.colspan)
         self.add_attribute('rowspan', self.rowspan)

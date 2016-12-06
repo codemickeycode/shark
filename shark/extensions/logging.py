@@ -1,8 +1,6 @@
 import logging
 import traceback
 
-from django.http import HttpRequest
-
 from shark.models import Log
 from shark.settings import SharkSettings
 

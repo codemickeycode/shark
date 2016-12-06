@@ -1,15 +1,14 @@
-from shark.base import BaseObject
-from shark.resources import Resources
+from shark.base import Object, StringParam
 
 
-class ProfilePanel(BaseObject):
+class ProfilePanel(Object):
     def __init__(self, name='', profile_pic='', background_pic='', description='', **kwargs):
         self.init(kwargs)
 
-        self.name = self.param(name, 'string', 'Name of the person')
-        self.profile_pic = self.param(profile_pic, 'string', 'URL to the picture of the person')
-        self.background_pic = self.param(background_pic, 'string', 'URL to a background picture')
-        self.description = self.param(description, 'string', 'Description of the person')
+        self.name = self.param(name, StringParam, 'Name of the person')
+        self.profile_pic = self.param(profile_pic, StringParam, 'URL to the picture of the person')
+        self.background_pic = self.param(background_pic, StringParam, 'URL to a background picture')
+        self.description = self.param(description, StringParam, 'Description of the person')
 
     def get_html(self, html):
         html.append('<div class="panel panel-default panel-profile">')

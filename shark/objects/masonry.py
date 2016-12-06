@@ -1,15 +1,15 @@
-from django.db.models import Model
-from shark.base import BaseObject, Default
+from shark.base import Object, Default, StringParam
+from shark.param_converters import ObjectsParam
 
 
-class Masonry(BaseObject):
+class Masonry(Object):
     """
     Render a masonry grid using the masonry js library (http://masonry.desandro.com/)
     """
     def __init__(self, items=Default, columnwidth="col-md-4", **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'The items', [])
-        self.columnwidth = self.param(columnwidth, 'string', 'Bootstrap class for the column witdh')
+        self.items = self.param(items, ObjectsParam, 'The items', [])
+        self.columnwidth = self.param(columnwidth, StringParam, 'Bootstrap class for the column witdh')
         self.id_needed()
         self.add_class('grid')
 
@@ -28,14 +28,14 @@ class Masonry(BaseObject):
         renderer.append_js('$("#{}").imagesLoaded().progress( function() {{ $("#{}").masonry("layout");}});'.format(self.id, self.id))
 
 
-class MasonryItem(BaseObject):
+class MasonryItem(Object):
     """
     Render an item in a masonry grid
     """
     def __init__(self, items=Default, columnwidth="col-md-4", **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'The content of the item')
-        self.columnwidth = self.param(columnwidth, 'string', 'Bootstrap class for the column witdh')
+        self.items = self.param(items, ObjectsParam, 'The content of the item')
+        self.columnwidth = self.param(columnwidth, StringParam, 'Bootstrap class for the column witdh')
         self.add_class('grid-item')
         self.add_class(self.columnwidth)
 

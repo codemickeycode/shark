@@ -1,12 +1,12 @@
-from shark.base import BaseObject
-from shark.resources import Resources
+from shark.base import Object
+from shark.param_converters import IntegerParam, BooleanParam
 
 
-class StarRating(BaseObject):
+class StarRating(Object):
     def __init__(self, rating=None, readonly=False, **kwargs):
         self.init(kwargs)
-        self.rating = self.param(rating, 'int', 'Current rating.')
-        self.readonly = self.param(readonly, 'bool', 'Is the rating read only?')
+        self.rating = self.param(rating, IntegerParam, 'Current rating.')
+        self.readonly = self.param(readonly, BooleanParam, 'Is the rating read only?')
         self.id_needed()
 
     def get_html(self, html):

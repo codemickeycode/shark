@@ -1,18 +1,19 @@
 from django.db.models import Model
-from shark.base import BaseObject, Default
+from shark.base import Object, Default, StringParam
+from shark.param_converters import ListParam, CssAttributeParam, DataTableParam
 
 
-class Graph(BaseObject):
+class Graph(Object):
     """
     Easy rendering of graphs using the Morris library. Currently only supports line graphs, more to be added.
     """
     def __init__(self, data=Default, x_column='', y_columns=Default, width='100%', height='250px', **kwargs):
         self.init(kwargs)
-        self.data = self.param(data, 'data', 'The dataset', [])
-        self.x_column = self.param(x_column, 'string', 'Name of the x column in the data')
-        self.y_columns = self.param(y_columns, 'list', 'Name of the y columns in the data', [])
-        self.width = self.param(width, 'css_attr', 'Graph width')
-        self.height = self.param(height, 'css_attr', 'Graph height')
+        self.data = self.param(data, DataTableParam, 'The dataset')
+        self.x_column = self.param(x_column, StringParam, 'Name of the x column in the data')
+        self.y_columns = self.param(y_columns, ListParam, 'Name of the y columns in the data', [])
+        self.width = self.param(width, CssAttributeParam, 'Graph width')
+        self.height = self.param(height, CssAttributeParam, 'Graph height')
         self.id_needed()
 
     def get_html(self, renderer):
@@ -20,26 +21,25 @@ class Graph(BaseObject):
         renderer.add_resource('//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js', 'js', 'morris', 'main')
         renderer.add_resource('//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css', 'css', 'morris', 'main')
 
-        if len(self.data)>0 and isinstance(self.data[0], Model):
-            get_function = lambda row, key: row.__getattribute__(key)
-        else:
-            get_function = lambda row, key: row[key]
-
         data_points = []
         series_names = set()
-        for row in self.data:
-            x_value = get_function(row, self.x_column)
+
+        field_column_map = {field_name: i for i, field_name in enumerate(self.data[0])}
+
+        for row in self.data[1]:
+            x_value = row[field_column_map[self.x_column]]
 
             values = ''
             series_name = 'a'
             for y_column in self.y_columns:
                 series_names.add(series_name)
-                values += ',' + series_name + ':"' + str(get_function(row, y_column)) + '"'
+                #TDOD: Escape data for output
+                values += ',' + series_name + ':"' + str(row[field_column_map[y_column]]) + '"'
                 series_name = chr(ord(series_name) + 1)
 
             data_points.append('{x:"' + str(x_value) + '"' + values + '}')
 
-        renderer.append(u'<div id="' + self.id + '" style="height:' + self.height + ';width:' + self.width + ';"></div>')
+        renderer.append('<div id="' + self.id + '" style="height:' + self.height + ';width:' + self.width + ';"></div>')
         renderer.append_js("""
                 Morris.Line({
                     element: '""" + self.id + """',

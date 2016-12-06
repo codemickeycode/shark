@@ -1,4 +1,5 @@
-from shark.base import Raw, Enumeration
+from shark.base import Enumeration
+from shark.objects.base import Raw
 
 
 def glyph(name):
@@ -212,4 +213,4 @@ class Glyph(Enumeration):
 
     @classmethod
     def name(cls, value):
-        return super(Glyph, cls).name(value).strip('_').replace('_', '-')
+        return cls.name(value).strip('_').replace('_', '-')

@@ -1,19 +1,21 @@
 import pickle
 
+from collections import Iterable
 from django.contrib.admin.utils import quote
 from django.core import signing, validators
 from django.core.exceptions import ValidationError, FieldDoesNotExist
-from django.db.models import QuerySet
-from shark.base import BaseObject, objectify, Default
+from django.db.models import QuerySet, IntegerField
+from shark.base import Object, objectify, Default, StringParam, BaseParamConverter
 from shark.common import listify, attr, iif
+from shark.param_converters import ObjectsParam, ModelParam
 
 
-class FieldError(BaseObject):
+class FieldError(Object):
     sub_classes = {}
 
     def __init__(self, field_name, **kwargs):
         self.init(kwargs)
-        self.field_name = self.param(field_name, 'string', 'Name of the field to show errors for')
+        self.field_name = self.param(field_name, StringParam, 'Name of the field to show errors for')
         self.id_needed()
 
     def render_container(self, html):
@@ -25,7 +27,7 @@ class FieldError(BaseObject):
         html.append('</li>')
 
     def _render_error(self, html, message):
-        self.render_error(html, self.param(message, 'Collection'))
+        self.render_error(html, objectify(message))
 
     def get_html(self, html):
         self.form = html.find_parent(Form)
@@ -45,7 +47,7 @@ class SpanBrFieldError(FieldError):
         html.append('</span><br>')
 
 
-class FormError(BaseObject):
+class FormError(Object):
     sub_classes = {}
 
     def __init__(self, form_id=None, **kwargs):
@@ -61,7 +63,7 @@ class FormError(BaseObject):
         html.append('</li>')
 
     def _render_error(self, html, message):
-        self.render_error(html, self.param(message, 'Collection'))
+        self.render_error(html, ObjectsParam.convert(message))
 
     def get_html(self, html):
         self.form = html.find_parent(Form)
@@ -90,7 +92,7 @@ class SpanBrFormError(FormError):
         html.append('</span><br>')
 
 
-class Validator():
+class Validator:
     def __init__(self, message='Invalid input.'):
         self.message = message
         self.init()
@@ -133,12 +135,12 @@ class EmailValidator(Validator):
             return self.message
 
 
-class Form(BaseObject):
+class Form(Object):
     def __init__(self, data=None, items=None, style='', **kwargs):
         self.init(kwargs)
-        self.data = self.param(data, 'Data', 'The model or DataHandler')
-        self.items = self.param(items, 'Collection', 'Items in the form')
-        self.style = self.param(style, 'str', 'Form style: inline or horizontal')
+        self.data = self.param(data, ModelParam, 'The model')
+        self.items = self.param(items, ObjectsParam, 'Items in the form')
+        self.style = self.param(style, StringParam, 'Form style: inline or horizontal')
 
         if self.style:
             self.add_class('form-' + self.style)
@@ -166,7 +168,7 @@ class Form(BaseObject):
         html.render('    ', self.items)
         if not self.error_object:
             self.error_object = SpanBrFormError()
-            self.error_object.parent = self
+            self.error_object._parent = self
             html.render('    ', self.error_object)
 
         self.form_data['err'] = self.form_data_class(self.error_object.__class__)
@@ -176,10 +178,10 @@ class Form(BaseObject):
         html.append('</form>')
 
 
-class FormGroup(BaseObject):
+class FormGroup(Object):
     def __init__(self, items=Default, style='', **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'Items in the form group')
+        self.items = self.param(items, ObjectsParam, 'Items in the form group')
         self.add_class('form-group')
         self.add_class('has-feedback')
 
@@ -195,7 +197,7 @@ def ensure_formgroup(func):
         if not formgroup:
             parent = self.parent
             formgroup = FormGroup(self)
-            formgroup.parent = parent
+            formgroup._parent = parent
             formgroup.get_html(html)
         else:
             func(self, html)
@@ -203,15 +205,30 @@ def ensure_formgroup(func):
     return wrapper
 
 
-class BaseField(BaseObject):
-    def __init__(self, name=None, value=Default, required=False, min_length=None, max_length=None, validators=None, **kwargs):
+class ValidatorListParam(BaseParamConverter):
+    def convert(cls, value, parent_object):
+        if value is None:
+            return []
+        if isinstance(value, Validator):
+            return [value]
+        if isinstance(value, list):
+            # TODO: Check that all items are of type Validator?
+            return value
+        if isinstance(value, Iterable):
+            return list(value)
+
+        raise TypeError('Parameter not a list of validators')
+
+
+class BaseField(Object):
+    def __init__(self, name=None, value=Default, required=False, min_length=None, max_length=None, form_validators=None, **kwargs):
         self.init(kwargs)
-        self.name = self.param(name, 'string', 'Name of the field')
-        self.value = self.param(value, 'string', 'Starting value of the field', Default)
-        self.required = self.param(required, 'boolean', 'Is this field required?')
-        self.min_length = self.param(min_length, 'int', 'Is this field required?')
-        self.max_length = self.param(max_length, 'int', 'Is this field required?')
-        self.validators = listify(self.param(validators, 'Validator or list', 'Validator instance or a list of Validators.'))
+        self.name = self.param(name, StringParam, 'Name of the field')
+        self.value = self.param(value, StringParam, 'Starting value of the field', Default)
+        self.required = self.param(required, BooleanField, 'Is this field required?')
+        self.min_length = self.param(min_length, IntegerField, 'Is this field required?')
+        self.max_length = self.param(max_length, IntegerField, 'Is this field required?')
+        self.validators = self.param(form_validators, ValidatorListParam, 'Validator instance or a list of Validators.')
 
         self.display_name = self.name.replace('_', ' ').title()
         if self.required:
@@ -225,10 +242,10 @@ class TextField(BaseField):
     def __init__(self,  name=None, label='', placeholder='', auto_focus=False,
                  help_text='', value=Default, **kwargs):
         super().__init__(name, value, **kwargs)
-        self.label = self.param(label, 'string', 'Text of the label')
-        self.placeholder = self.param(placeholder, 'string', 'Placeholder if input is empty')
-        self.auto_focus = self.param(auto_focus, 'boolean', 'Place the focus on this element')
-        self.help_text = self.param(help_text, 'string', 'help text for the input field')
+        self.label = self.param(label, StringParam, 'Text of the label')
+        self.placeholder = self.param(placeholder, StringParam, 'Placeholder if input is empty')
+        self.auto_focus = self.param(auto_focus, BooleanField, 'Place the focus on this element')
+        self.help_text = self.param(help_text, StringParam, 'help text for the input field')
         self.type = 'text'
         self.add_class('form-control')
 
@@ -276,7 +293,7 @@ class TextField(BaseField):
 class BooleanField(BaseField):
     def __init__(self,  name=None, label='', value=Default, **kwargs):
         super().__init__(name, value, **kwargs)
-        self.label = self.param(label, 'string', 'Text of the label')
+        self.label = self.param(label, StringParam, 'Text of the label')
 
     @ensure_formgroup
     def get_html(self, html):
@@ -322,34 +339,45 @@ class EmailField(TextField):
             self.validators.append(EmailValidator('Not a valid email address.'))
 
 
+class TwoColumnDataParam(BaseParamConverter):
+    @classmethod
+    def convert(cls, value, parent_object):
+        if value is None:
+            return []
+        elif isinstance(value, list):
+            return value
+        elif isinstance(value, QuerySet):
+            fieldname_1 = value._fields[0]
+            fieldname_2 = value._fields[1]
+            return [(record[fieldname_1], record[fieldname_2]) for record in value]
+        elif isinstance(value, Iterable) and not isinstance(value, str):
+            return value
+
+        raise TypeError("Parameter is not a list of tuples of a QuerySet with two columns")
+
+
 class DropDownField(BaseField):
     def __init__(self,  name=None, choices=None, label='', auto_focus=False,
                  help_text='', value=Default, **kwargs):
         super().__init__(name, value, **kwargs)
-        self.choices = self.param(choices, 'data', 'List of tuples of (value, text) or the result of a database query with two columns')
-        self.label = self.param(label, 'string', 'Text of the label')
-        self.auto_focus = self.param(auto_focus, 'boolean', 'Place the focus on this element')
-        self.help_text = self.param(help_text, 'string', 'help text for the input field')
+        self.choices = self.param(choices, TwoColumnDataParam, 'List of tuples of (value, text) or the result of a database query with two columns')
+        self.label = self.param(label, StringParam, 'Text of the label')
+        self.auto_focus = self.param(auto_focus, BooleanField, 'Place the focus on this element')
+        self.help_text = self.param(help_text, StringParam, 'help text for the input field')
         self.add_class('form-control')
 
     @ensure_formgroup
     def get_html(self, html):
         html.append('<select' + self.base_attributes + '>')
-        if isinstance(self.choices, QuerySet):
-            fieldname_1 = self.choices._fields[0]
-            fieldname_2 = self.choices._fields[1]
-            for choice in self.choices:
-                html.append('<option value="{}">{}</option>'.format(quote(choice[fieldname_1]), quote(choice[fieldname_2])))
-        else:
-            for choice in self.choices:
-                html.append('<option value="{}">{}</option>'.format(quote(choice[0]), quote(choice[1])))
+        for choice in self.choices:
+            html.append('<option value="{}">{}</option>'.format(quote(choice[0]), quote(choice[1])))
         html.append('</select>')
 
 
-class Submit(BaseObject):
+class Submit(Object):
     def __init__(self, action='', **kwargs):
         self.init(kwargs)
-        self.action = self.param(action, 'string', 'Action to run when the form is submitted with this button')
+        self.action = self.param(action, StringParam, 'Action to run when the form is submitted with this button')
 
     @ensure_formgroup
     def get_html(self, html):

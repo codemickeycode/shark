@@ -1,6 +1,5 @@
 import inspect
 from types import new_class
-from logging import handlers
 
 from django.conf.urls import url
 

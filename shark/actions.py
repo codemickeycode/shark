@@ -1,8 +1,6 @@
 import json
 from inspect import ismethod
-
-from django.utils.html import escape
-from django.utils.http import urlquote
+from shark.dependancies import escape_html, escape_url
 
 
 class ExtendedJSONEncoder(json.JSONEncoder):
@@ -16,7 +14,7 @@ class ExtendedJSONEncoder(json.JSONEncoder):
 
 def js_action(action, **kwargs):
     json_params = ExtendedJSONEncoder().encode(kwargs)
-    return u'do_action(\'' + escape(action) + '\', ' + escape(json_params) + u');return false;'
+    return 'do_action(\'' + escape_html(action) + '\', ' + escape_html(json_params) + ');return false;'
 
 
 class BaseAction:
@@ -71,7 +69,7 @@ class URL(BaseAction):
     def __init__(self, url, quote=True):
         if url:
             if quote:
-                self._url = urlquote(url, ':/@')
+                self._url = escape_url(url, ':/@')
             else:
                 self._url = url
         else:
@@ -115,10 +113,11 @@ class Action(BaseAction):
 
 
 class NoAction(BaseAction):
-    pass
+    def __bool__(self):
+        return False
 
 
-class JQ(object):
+class JQ(BaseAction):
     def __init__(self, obj_js, obj=None, renderer=None):
         self._js_pre = ''
         self._js_post = ''

@@ -1,4 +1,7 @@
-from shark.base import BaseObject, Default, Raw, Collection, Enumeration
+from shark.base import Enumeration, Object, StringParam
+from shark.common import Default
+from shark.objects.base import Raw
+from shark.param_converters import ObjectsParam, UrlParam, BooleanParam
 
 
 class NavBarPosition(Enumeration):
@@ -8,53 +11,51 @@ class NavBarPosition(Enumeration):
     fixed_bottom = 3
 
 
-class NavBar(BaseObject):
-    def __init__(self, position=NavBarPosition.static_top, brand=Default, items=Default, search=None, right_items=Default, **kwargs):
+class NavBar(Object):
+    def __init__(self, position=NavBarPosition.static_top, brand=None, items=None, search=None, right_items=Default, **kwargs):
         self.init(kwargs)
-        self.position = self.param(position, 'NavBarPosition', 'Position of the NavBar')
-        self.brand = self.param(brand, 'NavBrand', 'NavBrand for the NavBar')
-        self.items = self.param(items, 'Collection', 'Items on the left side of the navbar', Collection())
-        self.search = self.param(search, 'NavSearch', 'Search box')
-        self.right_items = self.param(right_items, 'Collection', 'Items on the right side of the navbar', Collection())
+        self.position = self.param(position, NavBarPosition, 'Position of the NavBar')
+        self.brand = self.param(brand, NavBrand, 'NavBrand for the NavBar')
+        self.items = self.param(items, ObjectsParam, 'Items on the left side of the navbar')
+        self.search = self.param(search, NavSearch, 'Search box')
+        self.right_items = self.param(right_items, ObjectsParam, 'Items on the right side of the navbar')
 
     def get_html(self, html):
         if self.position == NavBarPosition.fixed_top:
-            self.id_needed()
             html.append_js("$(window).resize(function () {$('body').css('padding-top', parseInt($('#" + self.id + "').css('height')))});")
             html.append_js("$('body').css('padding-top', parseInt($('#" + self.id + "').css('height')));")
         elif self.position == NavBarPosition.fixed_bottom:
-            self.id_needed()
             html.append_js("$(window).resize(function () {$('body').css('padding-bottom', parseInt($('#" + self.id + "').css('height')))});")
             html.append_js("$('body').css('padding-bottom', parseInt($('#" + self.id + "').css('height')));")
 
-        html.append(u'<nav' + self.base_attributes + u' class="navbar navbar-default navbar-{}">'.format(NavBarPosition.name(self.position).replace('_', '-')))
-        html.append(u'    <div class="container-fluid">')
-        html.append(u'        <div class="navbar-header">')
-        html.append(u'            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#{}_items" aria-expanded="false">'.format(self.id))
-        html.append(u'                <span class="sr-only">Toggle navigation</span>')
-        html.append(u'                <span class="icon-bar"></span>')
-        html.append(u'                <span class="icon-bar"></span>')
-        html.append(u'                <span class="icon-bar"></span>')
-        html.append(u'            </button>')
-        html.render(u'            ', self.brand)
-        html.append(u'        </div>')
-        html.append(u'')
-        html.append(u'        <div class="collapse navbar-collapse" id="{}_items">'.format(self.id))
+        html.append('<nav' + self.base_attributes + ' class="navbar navbar-default navbar-{}">'.format(NavBarPosition.name(self.position).replace('_', '-')))
+        html.append('    <div class="container-fluid">')
+        html.append('        <div class="navbar-header">')
+        html.append('            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#{}_items" aria-expanded="false">'.format(self.id))
+        html.append('                <span class="sr-only">Toggle navigation</span>')
+        html.append('                <span class="icon-bar"></span>')
+        html.append('                <span class="icon-bar"></span>')
+        html.append('                <span class="icon-bar"></span>')
+        html.append('            </button>')
+        html.render('            ', self.brand)
+        html.append('        </div>')
+        html.append('')
+        html.append('        <div class="collapse navbar-collapse" id="{}_items">'.format(self.id))
         if self.items:
-            html.append(u'            <ul class="nav navbar-nav">')
-            html.render(u'                ', self.items)
-            html.append(u'            </ul>')
-        html.render(u'            ', self.search)
+            html.append('            <ul class="nav navbar-nav">')
+            html.render('                ', self.items)
+            html.append('            </ul>')
+        html.render('            ', self.search)
         if self.right_items:
-            html.append(u'            <ul class="nav navbar-nav navbar-right">')
-            html.render(u'                ', self.right_items)
-            html.append(u'            </ul>')
-        html.append(u'        </div>')
-        html.append(u'    </div>')
-        html.append(u'</nav>')
+            html.append('            <ul class="nav navbar-nav navbar-right">')
+            html.render('                ', self.right_items)
+            html.append('            </ul>')
+        html.append('        </div>')
+        html.append('    </div>')
+        html.append('</nav>')
 
     @classmethod
-    def example(self):
+    def example(cls):
         return NavBar(
             NavBarPosition.none,
             NavBrand('Example'),
@@ -75,22 +76,22 @@ class NavBar(BaseObject):
         )
 
 
-class SideNav(BaseObject):
-    def __init__(self, items=Default, **kwargs):
+class SideNav(Object):
+    def __init__(self, items=None, **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'Items on the left side of the navbar', Collection())
+        self.items = self.param(items, ObjectsParam, 'Items on the left side of the navbar')
 
     def get_html(self, html):
-        html.append(u'<nav' + self.base_attributes + '>')
-        html.render(u'    ', self.items)
-        html.append(u'</nav>')
+        html.append('<nav' + self.base_attributes + '>')
+        html.render('    ', self.items)
+        html.append('</nav>')
 
 
-class NavBrand(BaseObject):
-    def __init__(self, name=Default, url='/', **kwargs):
+class NavBrand(Object):
+    def __init__(self, name=None, url='/', **kwargs):
         self.init(kwargs)
-        self.name = self.param(name, 'Collection', 'Name and or logo of the application', Collection())
-        self.url = self.param(url, 'URL', 'URL to navigate to when the brand name is clicked')
+        self.name = self.param(name, ObjectsParam, 'Name and or logo of the application')
+        self.url = self.param(url, UrlParam, 'URL to navigate to when the brand name is clicked')
 
     def get_html(self, html):
         html.append('<a' + self.base_attributes + ' class="navbar-brand"' + self.url.href + '>')
@@ -98,12 +99,12 @@ class NavBrand(BaseObject):
         html.append('</a>')
 
 
-class NavLink(BaseObject):
-    def __init__(self, name=Default, url=None, active=False, **kwargs):
+class NavLink(Object):
+    def __init__(self, name=None, url=None, active=False, **kwargs):
         self.init(kwargs)
-        self.name = self.param(name, 'Collection', 'Name of the link', Collection())
-        self.url = self.param(url, 'URL', 'URL to navigate to when the item is clicked')
-        self.active = self.param(active, 'boolean', 'Display as activated')
+        self.name = self.param(name, ObjectsParam, 'Name of the link')
+        self.url = self.param(url, UrlParam, 'URL to navigate to when the item is clicked')
+        self.active = self.param(active, BooleanParam, 'Display as activated')
 
     def get_html(self, html):
         if self.active:
@@ -114,7 +115,7 @@ class NavLink(BaseObject):
         html.append('</a></li>')
 
 
-class NavDivider(BaseObject):
+class NavDivider(Object):
     def __init__(self, **kwargs):
         self.init(kwargs)
 
@@ -122,37 +123,40 @@ class NavDivider(BaseObject):
         html.append('<li' + self.base_attributes + ' class="divider"></li>')
 
 
-class NavDropDown(BaseObject):
-    def __init__(self, name='', items=Default, **kwargs):
+class NavDropDown(Object):
+    def __init__(self, name=None, items=None, **kwargs):
         self.init(kwargs)
-        self.name = self.param(name, 'string', 'Name of the application')
-        self.items = self.param(items, 'Collection', 'Items in the dropdown menu', Collection())
+        self.name = self.param(name, ObjectsParam, 'Heading of the dropdown')
+        self.items = self.param(items, ObjectsParam, 'Items in the dropdown menu')
 
-    def get_html(self, html):
-        html.append('<li' + self.base_attributes + ' class="dropdown">')
-        html.append('    <a href="#" class="dropdown-toggle" data-toggle="dropdown">' + self.name + ' <b class="caret"></b></a>')
-        html.append('    <ul class="dropdown-menu">')
-        html.render('        ', self.items)
-        html.append('    </ul>')
-        html.append('</li>')
+    def get_html(self, renderer):
+        renderer.append('<li' + self.base_attributes + ' class="dropdown">')
+        renderer.append('    <a href="#" class="dropdown-toggle" data-toggle="dropdown">')
+        renderer.render('        ', self.name)
+        renderer.append('        <b class="caret"></b>')
+        renderer.append('    </a>')
+        renderer.append('    <ul class="dropdown-menu">')
+        renderer.render('        ', self.items)
+        renderer.append('    </ul>')
+        renderer.append('</li>')
 
 
-class NavSearch(BaseObject):
-    def __init__(self, name='Search', button_name=Raw('<span class="glyphicon glyphicon-search"></span>'), url='/search', **kwargs):
+class NavSearch(Object):
+    def __init__(self, name='Search', button_name=Default, url='/search', **kwargs):
         self.init(kwargs)
-        self.name = self.param(name, 'string', 'Placeholder text')
-        self.button_name = self.param(button_name, 'Collection', 'Text on the search button')
-        self.url = self.param(url, 'url', 'Search URL')
+        self.name = self.param(name, StringParam, 'Placeholder text')
+        self.button_name = self.param(button_name, ObjectsParam, 'Text on the search button', Raw('<span class="glyphicon glyphicon-search"></span>'))
+        self.url = self.param(url, StringParam, 'Search URL')
         self.add_class('navbar-form navbar-left')
 
-    def get_html(self, html):
-        html.append('<form' + self.base_attributes + ' action="' + self.url + '" role="search">')
-        html.append('    <div class="form-group">')
-        html.append('        <input name="keywords" type="text" class="form-control" placeholder="' + self.name + '">')
-        html.append('    </div>')
-        html.append('    <button type="submit" class="btn btn-default">')
-        html.inline_render(self.button_name)
-        html.append(    '</button>')
-        html.append('</form>')
+    def get_html(self, renderer):
+        renderer.append('<form' + self.base_attributes + ' action="' + self.url + '" role="search">')
+        renderer.append('    <div class="form-group">')
+        renderer.append('        <input name="keywords" type="text" class="form-control" placeholder="' + self.name + '">')
+        renderer.append('    </div>')
+        renderer.append('    <button type="submit" class="btn btn-default">')
+        renderer.inline_render(self.button_name)
+        renderer.append('</button>')
+        renderer.append('</form>')
 
 

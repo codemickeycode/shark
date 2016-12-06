@@ -4,8 +4,9 @@ import os
 from collections import Iterable
 
 import bleach
-import markdown
 import pickle
+
+import markdown
 from django.conf import settings
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.core import signing
@@ -19,20 +20,22 @@ from django.test import TestCase
 from django.utils.html import escape
 from django.utils.http import urlquote
 from django.utils.timezone import now
-from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.static import serve
 
 from shark import models
-from shark.actions import JS, JQ, BaseAction, URL
+from shark.actions import JS, JQ, URL, Action, BaseAction
 from shark.common import listify
+from shark.extensions.markdown import Markdown, ALLOWED_TAGS, ALLOWED_ATTRIBUTES, ALLOWED_STYLES
 from shark.models import EditableText, StaticPage as StaticPageModel
 from shark.objects.analytics import GoogleAnalyticsTracking
+from shark.objects.base import Script
 from shark.objects.layout import Div, Spacer, Row
 from shark.objects.navigation import NavLink
 from shark.objects.ui_elements import BreadCrumbs
+from shark.param_converters import ObjectsParam
+from shark.renderer import Renderer
 from shark.settings import SharkSettings
-from .base import Collection, BaseObject, PlaceholderWebObject, Default, ALLOWED_TAGS, ALLOWED_ATTRIBUTES, \
-    ALLOWED_STYLES, Markdown, Renderer, Script
+from .base import Objects, Object, PlaceholderWebObject, Default
 from .resources import Resources
 
 unique_name_counter = 0
@@ -100,9 +103,9 @@ class BasePageHandler(BaseHandler):
         self.robots_index = True
         self.robots_follow = True
 
-        self.items = Collection()
+        self.items = Objects()
         self.base_object = self.items
-        self.modals = Collection()
+        self.modals = Objects()
         self.nav = None
         self.crumbs = []
         self.main = None
@@ -119,7 +122,7 @@ class BasePageHandler(BaseHandler):
 
     def output_html(self, args, kwargs):
         print('Start output HTML', now())
-        content = Collection()
+        content = Objects()
         content.append(self.modals)
         content.append(self.nav)
         content.append(self.main)
@@ -133,8 +136,7 @@ class BasePageHandler(BaseHandler):
         for variable_name in dir(self):
             if variable_name not in self.ignored_variables:
                 variable = self.__getattribute__(variable_name)
-                if isinstance(variable, BaseObject):
-                    variable.id_needed()
+                if isinstance(variable, Object):
                     keep_variables[variable_name] = variable.serialize()
 
         renderer = Renderer(self)
@@ -169,7 +171,7 @@ class BasePageHandler(BaseHandler):
         if request.method == 'GET':
             self.init()
             if SharkSettings.SHARK_GOOGLE_ANALYTICS_CODE:
-                self.append(GoogleAnalyticsTracking(SharkSettings.SHARK_GOOGLE_ANALYTICS_CODE))
+                self += GoogleAnalyticsTracking(SharkSettings.SHARK_GOOGLE_ANALYTICS_CODE)
             try:
                 self.render_page(request, *args, **kwargs)
             except NotFound404:
@@ -219,20 +221,16 @@ class BasePageHandler(BaseHandler):
             return HttpResponse(json_data)
 
     def __iadd__(self, other):
-        self.base_object.append(other)
+        self.base_object += other
         return self
-
-    def append(self, *items):
-        self.base_object.append(*items)
-        if items:
-            return items[0]
-        else:
-            return None
 
     def append_row(self, *args, **kwargs):
         self.append(Row(Div(args, classes='col-md-12'), **kwargs))
 
     def add_javascript(self, script):
+        if isinstance(script, BaseAction):
+            script = script.js
+
         if self.request.method == 'GET':
             self += Script(script)
         else:
@@ -335,10 +333,10 @@ class HandlerTestCase(TestCase):
             self.assertEqual(response.status_code, 200)
 
 
-class Container(BaseObject):
-    def __init__(self, items=Default, **kwargs):
+class Container(Object):
+    def __init__(self, items=None, **kwargs):
         self.init(kwargs)
-        self.items = self.param(items, 'Collection', 'Items in the container', Collection())
+        self.items = self.param(items, ObjectsParam, 'Items in the container', Objects())
         self.add_class('container')
 
     def get_html(self, html):
@@ -354,9 +352,9 @@ class BaseContainerPageHandler(BasePageHandler):
     def __init__(self, *args, **kwargs):
         super(BaseContainerPageHandler, self).__init__(*args, **kwargs)
 
-        self.container = Container()
-        self.items.append(self.container)
-        self.base_object = self.container
+        self.container = Container(Objects())
+        self += self.container
+        self.base_object = self.container.items
 
 
 def shark_django_handler(request, *args, handler=None, **kwargs):
@@ -385,7 +383,7 @@ class StaticPage(BasePageHandler):
 
         self.title = page.title
         self.description = page.description
-        self.append(Markdown(page.body))
+        self += Markdown(page.body)
 
         if self.user.is_staff and self.user.has_perm('shark.staticpage_change'):
             if self.nav:

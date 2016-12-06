@@ -1,16 +1,23 @@
-from shark.base import BaseObject
+from shark.base import Object
 from shark.objects.font_awesome import Icon
 from shark.objects.layout import multiple_div_row
+from shark.param_converters import ObjectsParam, ActionParam
 
 
-class StatBox(BaseObject):
+class StatBox(Object):
     def __init__(self, stat=None, name=None, icon=None, view_more_name=None, view_more_action=None, **kwargs):
         self.init(kwargs)
-        self.stat = self.param(stat, 'Collection', 'The number or fact you want to show large')
-        self.name = self.param(name, 'Collection', 'Name of the number or fact, such as "Users" or "Pageviews"')
-        self.icon = self.param(icon, 'Collection', 'Large icon. Use any icon from Font Awesome at size 5')
-        self.view_more_name = self.param(view_more_name, 'Collection', 'The text of the link under the stat to get more info. If you don\'t enter this it will not show.')
-        self.view_more_action = self.param(view_more_action, 'Action', 'Action to perform when the view more area is clicked')
+        self.stat = self.param(stat, ObjectsParam, 'The number or fact you want to show large')
+        self.name = self.param(name, ObjectsParam, 'Name of the number or fact, such as "Users" or "Pageviews"')
+        self.icon = self.param(icon, ObjectsParam, 'Large icon. Use any icon from Font Awesome at size 5')
+        self.view_more_name = self.param(
+            view_more_name,
+            ObjectsParam,
+            'The text of the link under the stat to get more info. If you don\'t enter this it will not show.')
+        self.view_more_action = self.param(
+            view_more_action,
+            ActionParam,
+            'Action to perform when the view more area is clicked')
 
     def get_html(self, html):
         html.append('<div class="panel panel-primary">')

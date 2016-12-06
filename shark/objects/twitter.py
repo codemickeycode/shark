@@ -1,11 +1,11 @@
-from shark.base import BaseObject
-from shark.resources import Resources
+from shark.base import Object, StringParam
 
-class TwitterFeedWidget(BaseObject):
+
+class TwitterFeedWidget(Object):
     def __init__(self, widget_id='', username='', **kwargs):
         self.init(kwargs)
-        self.widget_id = self.param(widget_id, 'string', 'Widget ID of the twitter feed')
-        self.username = self.param(username, 'string', 'Name of the twitter account')
+        self.widget_id = self.param(widget_id, StringParam, 'Widget ID of the twitter feed')
+        self.username = self.param(username, StringParam, 'Name of the twitter account')
 
     def get_html(self, html):
         html.append('<a class="twitter-timeline" href="https://twitter.com/{}" data-widget-id="{}">Tweets by @{}</a>'.format(self.username, self.widget_id, self.username))
