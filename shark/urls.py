@@ -1,4 +1,6 @@
 import inspect
+import logging
+import traceback
 from types import new_class
 
 from django.conf.urls import url
@@ -32,8 +34,9 @@ def get_urls():
     for app_name in apps:
         try:
             app = __import__(app_name + '.views').views
-        except (ImportError, AttributeError):
-            pass
+        except (ImportError, AttributeError) as e:
+            traceback.print_exc()
+            logging.warning(e)
         else:
             objs = [getattr(app, key) for key in dir(app)]
 
