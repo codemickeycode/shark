@@ -9,7 +9,8 @@ from django.conf import settings
 
 from shark.common import listify
 from shark.handler import markdown_preview, BaseHandler, shark_django_handler, StaticPage, \
-    SiteMap, GoogleVerification, BingVerification, YandexVerification, shark_django_redirect_handler, Favicon
+    SiteMap, GoogleVerification, BingVerification, YandexVerification, shark_django_redirect_handler, Favicon, \
+    shark_django_handler_no_csrf
 from shark.settings import SharkSettings
 
 
@@ -20,7 +21,14 @@ def get_urls():
     def add_handler(obj, route=None):
         if inspect.isclass(obj) and issubclass(obj, BaseHandler) and 'route' in dir(obj):
             if route or obj.route:
-                urlpatterns.append(url(route or obj.route, shark_django_handler, {'handler': obj}, name=obj.get_unique_name()))
+
+                render_function = obj().render_base
+                urlpatterns.append(url(
+                    route or obj.route,
+                    shark_django_handler_no_csrf if 'exempt_csrf' in dir(render_function) and render_function.exempt_csrf else shark_django_handler,
+                    {'handler': obj},
+                    name=obj.get_unique_name()
+                ))
 
             for redirect_route in listify(obj.redirects):
                 if isinstance(redirect_route, str):

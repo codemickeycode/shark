@@ -20,6 +20,7 @@ from django.test import TestCase
 from django.utils.html import escape
 from django.utils.http import urlquote
 from django.utils.timezone import now
+from django.views.decorators.csrf import csrf_exempt
 from django.views.static import serve
 
 from shark import models
@@ -358,6 +359,13 @@ class BaseContainerPageHandler(BasePageHandler):
 
 
 def shark_django_handler(request, *args, handler=None, **kwargs):
+    handler_instance = handler()
+    outcome = handler_instance.render_base(request, *args, **kwargs)
+    return outcome
+
+
+@csrf_exempt
+def shark_django_handler_no_csrf(request, *args, handler=None, **kwargs):
     handler_instance = handler()
     outcome = handler_instance.render_base(request, *args, **kwargs)
     return outcome
