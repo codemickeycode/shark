@@ -23,9 +23,14 @@ def get_urls():
             if route or obj.route:
 
                 render_function = obj().render_base
+                if 'csrf_exempt' in dir(render_function) and render_function.csrf_exempt:
+                    render_handler = shark_django_handler_no_csrf
+                else:
+                    render_handler = shark_django_handler
+
                 urlpatterns.append(url(
                     route or obj.route,
-                    shark_django_handler_no_csrf if 'exempt_csrf' in dir(render_function) and render_function.exempt_csrf else shark_django_handler,
+                    render_handler,
                     {'handler': obj},
                     name=obj.get_unique_name()
                 ))
