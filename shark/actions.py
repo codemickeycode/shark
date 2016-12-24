@@ -69,7 +69,7 @@ class URL(BaseAction):
     def __init__(self, url, quote=True):
         if url:
             if quote:
-                self._url = escape_url(url, ':/@')
+                self._url = escape_url(url)
             else:
                 self._url = url
         else:

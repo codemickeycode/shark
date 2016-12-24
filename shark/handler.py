@@ -50,7 +50,7 @@ class BaseHandler:
     def render_base(self, request, *args, **kwargs):
         return self.render(request, *args, **kwargs)
 
-    def render(self, request):
+    def render(self, request, *args, **kwargs):
         raise Http404("Not Implemented")
 
     unique_name = None
@@ -117,7 +117,7 @@ class BasePageHandler(BaseHandler):
 
         print('Handler created', now())
 
-    def init(self):
+    def init(self, request):
         pass
 
     def output_html(self, args, kwargs):
@@ -169,7 +169,7 @@ class BasePageHandler(BaseHandler):
         self.user = self.request.user
 
         if request.method == 'GET':
-            self.init()
+            self.init(request)
             if SharkSettings.SHARK_GOOGLE_ANALYTICS_CODE:
                 self += GoogleAnalyticsTracking(SharkSettings.SHARK_GOOGLE_ANALYTICS_CODE)
             try:
