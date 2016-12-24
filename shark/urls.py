@@ -3,6 +3,7 @@ import logging
 import traceback
 from types import new_class
 
+import re
 from django.conf.urls import url
 
 from django.conf import settings
@@ -47,9 +48,12 @@ def get_urls():
     for app_name in apps:
         try:
             app = __import__(app_name + '.views').views
-        except (ImportError, AttributeError) as e:
-            traceback.print_exc()
-            logging.warning(e)
+        except ImportError as e:
+            if not re.match(r"No module named '{}'".format(app_name + '.views'), e.msg):
+                raise e
+        except AttributeError as e:
+            if not re.match(r"module '{}' has no attribute 'views'".format(app_name.split('.')[0]), e.args[0]):
+                raise e
         else:
             objs = [getattr(app, key) for key in dir(app)]
 
