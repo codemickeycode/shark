@@ -160,3 +160,39 @@ class NavSearch(Object):
         renderer.append('</form>')
 
 
+class Pills(Object):
+    def __init__(self, items, stacked=False, **kwargs):
+        self.init(kwargs)
+        self.items = self.param(items, ObjectsParam, "List of pills")
+        self.stacked = self.param(stacked, BooleanParam, "Should the pills be vertically stacked?")
+
+    def get_html(self, renderer):
+        self.add_class('nav nav-pills')
+        if self.stacked:
+            self.add_class('nav-stacked')
+
+        renderer.append('<ul' + self.base_attributes + '>')
+        renderer.render('    ', self.items)
+        renderer.append('</ul>')
+
+    def activate(self, id_name):
+        for pill in self.items:
+            if isinstance(pill, Pill):
+                pill.active = pill.id_name == id_name
+
+
+class Pill(Object):
+    def __init__(self, items=Default, action='', active=False, id_name='', **kwargs):
+        self.init(kwargs)
+        self.items = self.param(items, ObjectsParam, "Text/content on the pill")
+        self.action = self.param(action, UrlParam, "Action when clicked")
+        self.active = self.param(active, BooleanParam, "Is the pill active?")
+        self.id_name = self.param(id_name, StringParam, "Internal name to activate the right pill")
+
+    def get_html(self, renderer):
+        if self.active:
+            self.add_class('active')
+
+        renderer.append('<li' + self.base_attributes + ' role="presentation"><a{}>'.format(self.action.href))
+        renderer.render('    ', self.items)
+        renderer.append('</a></li>')
