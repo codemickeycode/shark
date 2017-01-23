@@ -173,6 +173,10 @@ class Object(BaseObject, BaseParamConverter):
     def id_needed(self):
         return self.id
 
+    @property
+    def parent(self):
+        return self._parent
+
     # noinspection PyUnusedLocal
     def param(self, value, converter, description='', default=None):
         """
