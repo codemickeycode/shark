@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError, FieldDoesNotExist
 from django.db.models import QuerySet, IntegerField
 from shark.base import Object, objectify, Default, StringParam, BaseParamConverter
 from shark.common import listify, attr, iif
-from shark.param_converters import ObjectsParam, ModelParam
+from shark.param_converters import ObjectsParam, ModelParam, BooleanParam, IntegerParam
 
 
 class FieldError(Object):
@@ -206,6 +206,7 @@ def ensure_formgroup(func):
 
 
 class ValidatorListParam(BaseParamConverter):
+    @classmethod
     def convert(cls, value, parent_object):
         if value is None:
             return []
@@ -225,9 +226,9 @@ class BaseField(Object):
         self.init(kwargs)
         self.name = self.param(name, StringParam, 'Name of the field')
         self.value = self.param(value, StringParam, 'Starting value of the field', Default)
-        self.required = self.param(required, BooleanField, 'Is this field required?')
-        self.min_length = self.param(min_length, IntegerField, 'Is this field required?')
-        self.max_length = self.param(max_length, IntegerField, 'Is this field required?')
+        self.required = self.param(required, BooleanParam, 'Is this field required?')
+        self.min_length = self.param(min_length, IntegerParam, 'Is this field required?')
+        self.max_length = self.param(max_length, IntegerParam, 'Is this field required?')
         self.validators = self.param(form_validators, ValidatorListParam, 'Validator instance or a list of Validators.')
 
         self.display_name = self.name.replace('_', ' ').title()
@@ -356,11 +357,56 @@ class TwoColumnDataParam(BaseParamConverter):
         raise TypeError("Parameter is not a list of tuples of a QuerySet with two columns")
 
 
+class RadioField(BaseField):
+    def __init__(self, name=None, radio_value='', description=None, value=Default, sub_section=None, **kwargs):
+        super().__init__(name, value, **kwargs)
+        self.radio_value = self.param(radio_value, StringParam, "The value for this radio button")
+        self.description = self.param(description, ObjectsParam, "The description")
+        self.sub_section = self.param(sub_section, ObjectsParam, "Control under this radiobutton that become visible when this radio is selected")
+
+    def get_html(self, renderer):
+        self.add_class("radio")
+        self.id_needed()
+        self.add_attribute('data-hassection', "true" if self.sub_section else "")
+        renderer.append('<div{}>'.format(self.base_attributes))
+        renderer.append('    <label>')
+        renderer.append('        <input{} type="radio" name="{}" value="{}" {}>'.format(
+            self.base_attributes,
+            self.name,
+            self.radio_value,
+            'checked' if self.radio_value == self.value else ''
+        ))
+        renderer.render('        ', self.description)
+        renderer.append('    </label>')
+        renderer.append('</div>')
+        if self.sub_section:
+            renderer.append('<div id="{}">'.format(self.id + "_section"))
+            renderer.render('    ', self.sub_section)
+            renderer.append('</div>')
+
+        if self.sub_section:
+            renderer.append_js("""
+$('#""" + self.id + """').click(function() {
+    $('#""" + self.id + """_section').slideDown()
+})
+            """)
+
+        renderer.append_js("""
+$("input[name='""" + self.name + """']").each(function () {
+    if ((this.id != '""" + self.id + """') && this.dataset.hassection) {
+        var section_id = '#' + this.id + '_section';
+        $('#""" + self.id + """').click(function() {
+            $(section_id).slideUp()
+        })
+    }
+});
+        """)
+
+
 class DropDownField(BaseField):
     def __init__(self,  name=None, choices=None, label='', auto_focus=False,
                  help_text='', value=Default, **kwargs):
         super().__init__(name, value, **kwargs)
-        self.choices = self.param(choices, TwoColumnDataParam, 'List of tuples of (value, text) or the result of a database query with two columns')
         self.label = self.param(label, StringParam, 'Text of the label')
         self.auto_focus = self.param(auto_focus, BooleanField, 'Place the focus on this element')
         self.help_text = self.param(help_text, StringParam, 'help text for the input field')
