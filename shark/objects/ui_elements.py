@@ -316,6 +316,27 @@ class Video(Object):
         return Video(urls='http://www.sample-videos.com/video/mp4/240/big_buck_bunny_240p_1mb.mp4')
 
 
+class IFrame(Object):
+    """
+    Render a Google Maps map.
+
+    Be sure to set the SHARK_GOOGLE_BROWSER_API_KEY setting in your settings.py.
+    You can get this key in the [Google Developers API Console](https://console.developers.google.com/apis/library)
+    """
+    def __init__(self, url='', width='100%', height='250px', **kwargs):
+        self.init(kwargs)
+        self.url = self.param(url, UrlParam, 'Iframe source URL')
+        self.width = self.param(width, CssAttributeParam, 'Width of the map in px or %')
+        self.height = self.param(height, CssAttributeParam, 'Height of the map in px or %')
+
+    def get_html(self, html):
+        html.append('<iframe' + self.base_attributes + ' width="{}" height="{}" frameborder="0" style="border:0" src="{}"></iframe>'.format(self.width, self.height, self.url))
+
+    @classmethod
+    def example(cls):
+        return GoogleMaps('Fukuoka, Japan')
+
+
 class GoogleMaps(Object):
     """
     Render a Google Maps map.
