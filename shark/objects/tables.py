@@ -121,8 +121,10 @@ class TableColumn(Object):
         self.rowspan = self.param(rowspan, IntegerParam, 'Span number of rows')
         self.align = self.param(align, StringParam, 'Align left, right or center')
 
-        self.add_attribute('colspan', self.colspan)
-        self.add_attribute('rowspan', self.rowspan)
+        if self.colspan:
+            self.add_attribute('colspan', self.colspan)
+        if self.rowspan:
+            self.add_attribute('rowspan', self.rowspan)
         if self.align:
             if self.style and not self.style.endswith(';'):
                 self.style += ';'
