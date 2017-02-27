@@ -126,9 +126,7 @@ class TableColumn(Object):
         if self.rowspan:
             self.add_attribute('rowspan', self.rowspan)
         if self.align:
-            if self.style and not self.style.endswith(';'):
-                self.style += ';'
-            self.style += 'text-align: {};'.format(self.align)
+            self.add_style('text-align: {};'.format(self.align))
 
     def get_html(self, html):
         html.append('<td' + self.base_attributes + '>')
