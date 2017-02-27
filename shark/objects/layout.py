@@ -371,6 +371,6 @@ def multiple_object_row(*content_collections, **kwargs):
 
 def two_column(main_column, side_column, main_width=8):
     return Row([
-        Div(main_column, classes='col-md-{}'.format(main_width)),
-        Div(side_column, classes='col-md-{}'.format(12-main_width))
+        Div(main_column, _class='col-md-{}'.format(main_width)),
+        Div(side_column, _class='col-md-{}'.format(12-main_width))
     ])
