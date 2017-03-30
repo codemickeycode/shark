@@ -374,7 +374,7 @@ class RadioField(BaseField):
         if self.value == Default and form.data:
             try:
                 field = form.data._meta.get_field(self.name)
-                self.value = form.data.__getattribute__(self.name)
+                self.value = str(form.data.__getattribute__(self.name))
             except FieldDoesNotExist:
                 pass
 
