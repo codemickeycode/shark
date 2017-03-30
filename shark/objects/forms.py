@@ -18,33 +18,33 @@ class FieldError(Object):
         self.field_name = self.param(field_name, StringParam, 'Name of the field to show errors for')
         self.id_needed()
 
-    def render_container(self, html):
-        html.append('<ul' + self.base_attributes + '></ul>')
+    def render_container(self, renderer):
+        renderer.append('<ul' + self.base_attributes + '></ul>')
 
-    def render_error(self, html, message):
-        html.append('<li>')
-        html.render('    ', message)
-        html.append('</li>')
+    def render_error(self, renderer, message):
+        renderer.append('<li>')
+        renderer.render('    ', message)
+        renderer.append('</li>')
 
-    def _render_error(self, html, message):
-        self.render_error(html, objectify(message))
+    def _render_error(self, renderer, message):
+        self.render_error(renderer, objectify(message))
 
-    def get_html(self, html):
-        self.form = html.find_parent(Form)
+    def get_html(self, renderer):
+        self.form = renderer.find_parent(Form)
         self.form.form_data['fld'][self.field_name]['err'] = (self.form.form_data_class(self.__class__), self.id)
         self.add_class('form-error')
-        self.render_container(html)
+        self.render_container(renderer)
 
 
 class SpanBrFieldError(FieldError):
-    def render_container(self, html):
+    def render_container(self, renderer):
         self.add_class('help-block with-errors')
-        html.append('<span' + self.base_attributes + '></span>')
+        renderer.append('<span' + self.base_attributes + '></span>')
 
-    def render_error(self, html, message):
-        html.append('<span class="text-danger">')
-        html.render('    ', objectify(message))
-        html.append('</span><br>')
+    def render_error(self, renderer, message):
+        renderer.append('<span class="text-danger">')
+        renderer.render('    ', objectify(message))
+        renderer.append('</span><br>')
 
 
 class FormError(Object):
@@ -54,42 +54,42 @@ class FormError(Object):
         self.init(kwargs)
         self.form_id = form_id
 
-    def render_container(self, html):
-        html.append('<ul' + self.base_attributes + '></ul>')
+    def render_container(self, renderer):
+        renderer.append('<ul' + self.base_attributes + '></ul>')
 
-    def render_error(self, html, message):
-        html.append('<li>')
-        html.render('    ', message)
-        html.append('</li>')
+    def render_error(self, renderer, message):
+        renderer.append('<li>')
+        renderer.render('    ', message)
+        renderer.append('</li>')
 
-    def _render_error(self, html, message):
-        self.render_error(html, ObjectsParam.convert(message))
+    def _render_error(self, renderer, message):
+        self.render_error(renderer, ObjectsParam.convert(message))
 
-    def get_html(self, html):
-        self.form = html.find_parent(Form)
+    def get_html(self, renderer):
+        self.form = renderer.find_parent(Form)
         self.form.error_object = self
         self.add_class('form-error')
-        self.render_container(html)
+        self.render_container(renderer)
 
 
 class ParagraphFormError(FormError):
-    def render_container(self, html):
-        html.append('<span' + self.base_attributes +'></span>')
+    def render_container(self, renderer):
+        renderer.append('<span' + self.base_attributes +'></span>')
 
-    def render_error(self, html, message):
-        html.append('<p>')
-        html.render('    ', message)
-        html.append('</p>')
+    def render_error(self, renderer, message):
+        renderer.append('<p>')
+        renderer.render('    ', message)
+        renderer.append('</p>')
 
 
 class SpanBrFormError(FormError):
-    def render_container(self, html):
-        html.append('<span' + self.base_attributes + '></span>')
+    def render_container(self, renderer):
+        renderer.append('<span' + self.base_attributes + '></span>')
 
-    def render_error(self, html, message):
-        html.append('<span class="text-danger">')
-        html.render('    ', message)
-        html.append('</span><br>')
+    def render_error(self, renderer, message):
+        renderer.append('<span class="text-danger">')
+        renderer.render('    ', message)
+        renderer.append('</span><br>')
 
 
 class Validator:
@@ -161,21 +161,21 @@ class Form(Object):
             self.form_data_classes[cls] = self.form_data['cls'].index(cls)
         return self.form_data_classes[cls]
 
-    def get_html(self, html):
-        html.append('<form' + self.base_attributes + ' role="form" data-toggle="validator" data-async>')
-        html.append('    <input type="hidden" name="action" value="_form_post">')
-        html.append('    <input type="hidden" name="sub_action" value="">')
-        html.render('    ', self.items)
+    def get_html(self, renderer):
+        renderer.append('<form' + self.base_attributes + ' role="form" data-toggle="validator" data-async>')
+        renderer.append('    <input type="hidden" name="action" value="_form_post">')
+        renderer.append('    <input type="hidden" name="sub_action" value="">')
+        renderer.render('    ', self.items)
         if not self.error_object:
             self.error_object = SpanBrFormError()
             self.error_object._parent = self
-            html.render('    ', self.error_object)
+            renderer.render('    ', self.error_object)
 
         self.form_data['err'] = self.form_data_class(self.error_object.__class__)
 
         form_data = signing.dumps(self.form_data, compress=True, serializer=lambda: pickle)
-        html.append('    <input type="hidden" name="form_data" value="{}">'.format(form_data))
-        html.append('</form>')
+        renderer.append('    <input type="hidden" name="form_data" value="{}">'.format(form_data))
+        renderer.append('</form>')
 
 
 class FormGroup(Object):
@@ -185,22 +185,22 @@ class FormGroup(Object):
         self.add_class('form-group')
         self.add_class('has-feedback')
 
-    def get_html(self, html):
-        html.append('<div' + self.base_attributes + '>')
-        html.render('    ', self.items)
-        html.append('</div>')
+    def get_html(self, renderer):
+        renderer.append('<div' + self.base_attributes + '>')
+        renderer.render('    ', self.items)
+        renderer.append('</div>')
 
 
 def ensure_formgroup(func):
-    def wrapper(self, html):
-        formgroup = html.find_parent(FormGroup)
+    def wrapper(self, renderer):
+        formgroup = renderer.find_parent(FormGroup)
         if not formgroup:
             parent = self.parent
             formgroup = FormGroup(self)
             formgroup._parent = parent
-            formgroup.get_html(html)
+            formgroup.get_html(renderer)
         else:
-            func(self, html)
+            func(self, renderer)
 
     return wrapper
 
@@ -251,14 +251,14 @@ class TextField(BaseField):
         self.add_class('form-control')
 
     @ensure_formgroup
-    def get_html(self, html):
+    def get_html(self, renderer):
         for validator in self.validators:
             if isinstance(validator, EmailValidator):
                 self.type = 'email'
 
-        html.add_resource('https://cdnjs.cloudflare.com/ajax/libs/1000hz-bootstrap-validator/0.10.1/validator.min.js', 'js', 'validator', 'main')
+        renderer.add_resource('https://cdnjs.cloudflare.com/ajax/libs/1000hz-bootstrap-validator/0.10.1/validator.min.js', 'js', 'validator', 'main')
 
-        form = html.find_parent(Form)
+        form = renderer.find_parent(Form)
         form.form_data['fld'][self.name] = {
             'cls': form.form_data_class(self.__class__),
             'valid': [(form.form_data_class(validator.__class__), validator.serialize()) for validator in self.validators]
@@ -273,22 +273,22 @@ class TextField(BaseField):
 
 
         if self.label or self.display_name:
-            html.append('<label for="{}">{}</label>'.format(self.id, self.label or self.display_name))
+            renderer.append('<label for="{}">{}</label>'.format(self.id, self.label or self.display_name))
 
-        html.append('<input type="' + self.type + '"' +
+        renderer.append('<input type="' + self.type + '"' +
                     self.base_attributes +
                     attr('name', self.name) +
                     attr('value', '' if self.value == Default else self.value) +
                     attr('placeholder', self.placeholder) +
                     iif(self.auto_focus, ' data-autofocus') +
                     '>')
-        html.append('<span class="glyphicon form-control-feedback" aria-hidden="true"></span>')
+        renderer.append('<span class="glyphicon form-control-feedback" aria-hidden="true"></span>')
 
         field_error = SpanBrFieldError(self.name)
-        html.append('<span class="help-block">')
-        field_error.get_html(html)
-        html.append('    ' + self.help_text)
-        html.append('</span>')
+        renderer.append('<span class="help-block">')
+        field_error.get_html(renderer)
+        renderer.append('    ' + self.help_text)
+        renderer.append('</span>')
 
 
 class BooleanField(BaseField):
@@ -297,10 +297,10 @@ class BooleanField(BaseField):
         self.label = self.param(label, StringParam, 'Text of the label')
 
     @ensure_formgroup
-    def get_html(self, html):
-        html.add_resource('https://cdnjs.cloudflare.com/ajax/libs/1000hz-bootstrap-validator/0.10.1/validator.min.js', 'js', 'validator', 'main')
+    def get_html(self, renderer):
+        renderer.add_resource('https://cdnjs.cloudflare.com/ajax/libs/1000hz-bootstrap-validator/0.10.1/validator.min.js', 'js', 'validator', 'main')
 
-        form = html.find_parent(Form)
+        form = renderer.find_parent(Form)
         form.form_data['fld'][self.name] = {
             'cls': form.form_data_class(self.__class__),
             'valid': [(form.form_data_class(validator.__class__), validator.serialize()) for validator in self.validators]
@@ -317,13 +317,13 @@ class BooleanField(BaseField):
             self.add_attribute('checked', 'checked')
 
         field_error = SpanBrFieldError(self.name)
-        html.append('<div class="checkbox">')
-        html.append('    <label>')
-        html.append('        <input type="checkbox"' + self.base_attributes + attr('name', self.name) + '>')
-        html.append('        ' + self.label)
-        html.append('    </label>')
-        field_error.get_html(html)
-        html.append('</div>')
+        renderer.append('<div class="checkbox">')
+        renderer.append('    <label>')
+        renderer.append('        <input type="checkbox"' + self.base_attributes + attr('name', self.name) + '>')
+        renderer.append('        ' + self.label)
+        renderer.append('    </label>')
+        field_error.get_html(renderer)
+        renderer.append('</div>')
 
 
 class EmailField(TextField):
@@ -365,8 +365,20 @@ class RadioField(BaseField):
         self.sub_section = self.param(sub_section, ObjectsParam, "Control under this radiobutton that become visible when this radio is selected")
 
     def get_html(self, renderer):
+        form = renderer.find_parent(Form)
+        form.form_data['fld'][self.name] = {
+            'cls': form.form_data_class(self.__class__),
+            'valid': [(form.form_data_class(validator.__class__), validator.serialize()) for validator in self.validators]
+        }
+
+        if self.value == Default and form.data:
+            try:
+                field = form.data._meta.get_field(self.name)
+                self.value = form.data.__getattribute__(self.name)
+            except FieldDoesNotExist:
+                pass
+
         self.add_class("radio")
-        self.id_needed()
         self.add_attribute('data-hassection', "true" if self.sub_section else "")
         renderer.append('<div{}>'.format(self.base_attributes))
         renderer.append('    <label>')
@@ -380,27 +392,27 @@ class RadioField(BaseField):
         renderer.append('    </label>')
         renderer.append('</div>')
         if self.sub_section:
+            self.id_needed()
             renderer.append('<div id="{}">'.format(self.id + "_section"))
             renderer.render('    ', self.sub_section)
             renderer.append('</div>')
 
-        if self.sub_section:
             renderer.append_js("""
 $('#""" + self.id + """').click(function() {
     $('#""" + self.id + """_section').slideDown()
 })
             """)
 
-        renderer.append_js("""
-$("input[name='""" + self.name + """']").each(function () {
-    if ((this.id != '""" + self.id + """') && this.dataset.hassection) {
-        var section_id = '#' + this.id + '_section';
-        $('#""" + self.id + """').click(function() {
-            $(section_id).slideUp()
-        })
-    }
-});
-        """)
+            renderer.append_js("""
+    $("input[name='""" + self.name + """']").each(function () {
+        if ((this.id != '""" + self.id + """') && this.dataset.hassection) {
+            var section_id = '#' + this.id + '_section';
+            $('#""" + self.id + """').click(function() {
+                $(section_id).slideUp()
+            })
+        }
+    });
+            """)
 
 
 class DropDownField(BaseField):
@@ -413,11 +425,11 @@ class DropDownField(BaseField):
         self.add_class('form-control')
 
     @ensure_formgroup
-    def get_html(self, html):
-        html.append('<select' + self.base_attributes + '>')
+    def get_html(self, renderer):
+        renderer.append('<select' + self.base_attributes + '>')
         for choice in self.choices:
-            html.append('<option value="{}">{}</option>'.format(quote(choice[0]), quote(choice[1])))
-        html.append('</select>')
+            renderer.append('<option value="{}">{}</option>'.format(quote(choice[0]), quote(choice[1])))
+        renderer.append('</select>')
 
 
 class Submit(Object):
@@ -426,8 +438,8 @@ class Submit(Object):
         self.action = self.param(action, StringParam, 'Action to run when the form is submitted with this button')
 
     @ensure_formgroup
-    def get_html(self, html):
+    def get_html(self, renderer):
         on_click = '$("#" + this.form.id + " .form-error").children().remove();'
         on_click += '$(this.form).find("[name=sub_action]").attr("value", "{}");'.format(self.action)
         on_click += 'send_action($(this.form).serialize());'
-        html.append('<button type="submit" class="btn btn-primary" onclick=\'{};return false;\'>Submit</button>'.format(on_click))
+        renderer.append('<button type="submit" class="btn btn-primary" onclick=\'{};return false;\'>Submit</button>'.format(on_click))
