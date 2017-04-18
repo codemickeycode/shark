@@ -88,6 +88,8 @@ class BaseHandler:
 
         return []
 
+    def build_absolute_uri(self):
+        return self.re
 
 class NotFound404(Exception):
     pass
@@ -174,12 +176,14 @@ class BasePageHandler(BaseHandler):
             if SharkSettings.SHARK_GOOGLE_ANALYTICS_CODE:
                 self += GoogleAnalyticsTracking(SharkSettings.SHARK_GOOGLE_ANALYTICS_CODE)
             try:
-                self.render_page(request, *args, **kwargs)
+                result = self.render_page(request, *args, **kwargs)
             except NotFound404:
                 raise Http404()
             else:
-                output = self.output_html(args, kwargs)
-            return output
+                if result is None:
+                    return self.output_html(args, kwargs)
+                else:
+                    return result
         elif request.method == 'POST':
             action = self.request.POST.get('action', '')
             keep_variables = json.loads(self.request.POST.get('keep_variables', '{}'))
