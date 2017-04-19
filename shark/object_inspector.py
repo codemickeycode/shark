@@ -27,12 +27,15 @@ class ObjectInspector(object):
                     return old_param(self, value, type, description, default)
 
                 # Using a custom param function to record the param info
-                old_param = obj.param
-                obj.param = param
-                obj() #Create an instance to run our param recording
-                obj.param = old_param
-                code = inspect.getsourcelines(obj)
-                objects.append((key, obj, param_info, code[0], code[1]))
+                try:
+                    old_param = obj.param
+                    obj.param = param
+                    obj() #Create an instance to run our param recording
+                    obj.param = old_param
+                    code = inspect.getsourcelines(obj)
+                    objects.append((key, obj, param_info, code[0], code[1]))
+                except:
+                    objects.append((key, None, None, None, 100000))
 
             if inspect.isfunction(obj) and inspect.getfile(obj)==filename:
                 functions.append((obj, inspect.signature(obj).parameters))
