@@ -9,30 +9,30 @@ class Resource(object):
         self.name = name
 
 
-class Resources:
+class Resources(list):
     def __init__(self):
-        self.resources = []
-        self.resource_map = {}
+        super().__init__()
+        self.map = {}
 
     def add_resource(self, url, type, module, name=''):
         key = '{}|{}|{}'.format(type, module, name)
-        if not key in self.resource_map:
+        if not key in self.map:
             resource = Resource(url, type, module, name)
-            self.resources.append(resource)
-            self.resource_map[key] = resource
+            self.append(resource)
+            self.map[key] = resource
 
     def replace_resource(self, url, type, module, name=''):
         key = '{}|{}|{}'.format(type, module, name)
-        if key in self.resource_map:
-            self.resource_map[key].url = url
+        if key in self.map:
+            self.map[key].url = url
         else:
             logging.warning('Resource {} cannot be found to be replaced. Added instead.'.format(key))
             self.add_resource(url, type, module, name)
 
     def add_or_replace_resource(self, url, type, module, name=''):
         key = '{}|{}|{}'.format(type, module, name)
-        if key in self.resource_map:
-            self.resource_map[key].url = url
+        if key in self.map:
+            self.map[key].url = url
         else:
             self.add_resource(url, type, module, name)
 

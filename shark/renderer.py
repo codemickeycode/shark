@@ -158,18 +158,18 @@ class Renderer:
 
     @property
     def css_files(self):
-        return [resource.url for resource in self.resources.resources if resource.type=='css']
+        return [resource.url for resource in self.resources if resource.type=='css']
 
     @property
     def css_resources(self):
-        return [resource for resource in self.resources.resources if resource.type=='css']
+        return [resource for resource in self.resources if resource.type=='css']
 
     @property
     def js_files(self):
-        return [resource.url for resource in self.resources.resources if resource.type=='js']
+        return [resource.url for resource in self.resources if resource.type=='js']
 
     @property
     def js_resources(self):
-        return [resource for resource in self.resources.resources if resource.type=='js']
+        return [resource for resource in self.resources if resource.type=='js']
 
 
