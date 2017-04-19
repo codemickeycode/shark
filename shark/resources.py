@@ -38,5 +38,5 @@ class Resources(list):
 
     def add_resources(self, resources):
         for resource in resources:
-            self.add_or_replace_resource(resource.url, resource.type, resource,module, resource.name)
+            self.add_or_replace_resource(resource.url, resource.type, resource.module, resource.name)
 
