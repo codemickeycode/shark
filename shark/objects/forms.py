@@ -267,7 +267,7 @@ class TextField(BaseField):
         if self.value == Default and form.data:
             try:
                 field = form.data._meta.get_field(self.name)
-                self.value = form.data.__getattribute__(self.name)
+                self.value = form.data.__getattr__(self.name)
             except FieldDoesNotExist:
                 pass
 
