@@ -29,3 +29,14 @@ class Resources:
             logging.warning('Resource {} cannot be found to be replaced. Added instead.'.format(key))
             self.add_resource(url, type, module, name)
 
+    def add_or_replace_resource(self, url, type, module, name=''):
+        key = '{}|{}|{}'.format(type, module, name)
+        if key in self.resource_map:
+            self.resource_map[key].url = url
+        else:
+            self.add_resource(url, type, module, name)
+
+    def add_resources(self, resources):
+        for resource in resources:
+            self.add_or_replace_resource(resource.url, resource.type, resource,module, resource.name)
+

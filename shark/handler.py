@@ -147,14 +147,24 @@ class BasePageHandler(BaseHandler):
         renderer.render('        ', content)
         print('End render', now(), renderer.render_count)
 
+        renderer.resources.add_resources(self.resources)
+
         html = render(self.request, 'shark/base.html', {
                                   'title': self.title,
                                   'description': self.description.replace('"', '\''),
                                   'keywords': self.keywords,
                                   'author': self.author,
                                   'content': renderer.html,
-                                  'extra_css': '\r\n'.join(['        <link rel="stylesheet" href="' + css_resource.url + '" id="resource-{}-{}"/>'.format(css_resource.module, css_resource.name) for css_resource in renderer.css_resources]),
-                                  'extra_js': '\r\n'.join(['        <script src="' + js_file + '"></script>' for js_file in renderer.js_files]),
+                                  'extra_css': '\r\n'.join(
+                                      [
+                                          '        <link rel="stylesheet" href="{}" id="resource-{}-{}"/>'.format(css_resource.url, css_resource.module, css_resource.name)
+                                          for css_resource in renderer.css_resources
+                                      ]
+                                  ),
+                                  'extra_js': '\r\n'.join(
+                                      ['        <script src="{}"></script>'.format(js_file)
+                                      for js_file in renderer.js_files]
+                                  ),
                                   'javascript': renderer.js,
                                   'css': renderer.css,
                                   'keep_variables': keep_variables
