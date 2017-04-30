@@ -350,6 +350,9 @@ class PlaceholderWebObject(BaseObject):
         self.variables[name] = objectify(web_object)
         return name
 
+    def replace(self, web_object):
+        self.jq.html(web_object)
+
     # TODO: Support calling methods on the original class, like Image().src()
     def src(self, src):
         return self.jq.attr('src', src)
