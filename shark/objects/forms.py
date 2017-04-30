@@ -239,6 +239,18 @@ class BaseField(Object):
             validator.enable_live_validation(self)
 
 
+class HiddenField(BaseField):
+    def __init__(self,  name=None, value=Default, **kwargs):
+        super().__init__(name, value, **kwargs)
+
+    def get_html(self, renderer):
+        renderer.append('<input type="hidden"' +
+                    self.base_attributes +
+                    attr('name', self.name) +
+                    attr('value', '' if self.value == Default else self.value) +
+                    '>')
+
+
 class TextField(BaseField):
     def __init__(self,  name=None, label='', placeholder='', auto_focus=False,
                  help_text='', value=Default, **kwargs):

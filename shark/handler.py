@@ -308,7 +308,7 @@ class BasePageHandler(BaseHandler):
                         selector = '$("#{}")'.format(id)
                         error_renderer = Renderer()
                         field_error.render_error(error_renderer, outcome)
-                        self.javascript += JQ(selector).append_raw(error_renderer.html).js
+                        self.javascript += JQ(selector).append_raw(error_renderer.html).js(error_renderer)
                         self.javascript += error_renderer.js
 
         if has_error:
