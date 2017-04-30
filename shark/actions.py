@@ -228,3 +228,7 @@ class JQ(BaseAction, Object):
 
     def get_html(self, renderer):
         renderer.append_js(self.js(renderer))
+
+
+def jq_by_id(id):
+    return JQ('$("#{}")'.format(id))
