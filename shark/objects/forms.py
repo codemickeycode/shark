@@ -420,7 +420,7 @@ class DropDownField(BaseField):
                  help_text='', value=Default, **kwargs):
         super().__init__(name, value, **kwargs)
         self.label = self.param(label, StringParam, 'Text of the label')
-        self.auto_focus = self.param(auto_focus, BooleanField, 'Place the focus on this element')
+        self.auto_focus = self.param(auto_focus, BooleanParam, 'Place the focus on this element')
         self.help_text = self.param(help_text, StringParam, 'help text for the input field')
         self.add_class('form-control')
 
