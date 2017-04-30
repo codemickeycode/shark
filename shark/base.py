@@ -2,7 +2,6 @@ import logging
 from collections import Iterable
 from inspect import isclass
 
-from shark.actions import JQ
 from shark.common import Default
 from shark.dependancies import escape_url, escape_html
 
@@ -236,6 +235,11 @@ class Object(BaseObject, BaseParamConverter):
             logging.warning('"{}" attribute already set, overridden'.format(key))
         self._attributes[key] = value
 
+    def add_variable(self, web_object):
+        name = self.id.lower() + '_' + str(len(self._variables) + 1)
+        self._variables[name] = objectify(web_object)
+        return name
+
     def get_html(self, renderer):
         pass
 
@@ -276,9 +280,9 @@ class Object(BaseObject, BaseParamConverter):
             raise NotImplementedError("{} does not have 'items'".format(self.__class__.__name__))
 
 
-
     @property
     def jq(self):
+        from shark.actions import JQ
         return JQ("$('#{}')".format(self.id), self)
 
     @classmethod
@@ -336,6 +340,7 @@ class PlaceholderWebObject(BaseObject):
 
     @property
     def jq(self):
+        from shark.actions import JQ
         jq = JQ("$('#{}')".format(self.id), self)
         self.jqs.append(jq)
         return jq

@@ -9,7 +9,7 @@ function send_action(post_data) {
         dataType: 'json',
 
         success: function(data, status) {
-            eval(data.javascript)
+            eval(data.javascript);
             bind_forms();
         }
     });

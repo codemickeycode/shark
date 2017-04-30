@@ -118,7 +118,7 @@ class BasePageHandler(BaseHandler):
 
         self.resources = Resources()
 
-        print('Handler created', now())
+        print('Handler created', self.__class__.__name__, now())
 
     def init(self, request):
         pass
@@ -223,10 +223,12 @@ class BasePageHandler(BaseHandler):
             for obj in keep_variable_objects:
                 self.renderer.render_variables(obj.variables)
 
-            javascript.append(self.renderer.js)
-
             for obj in keep_variable_objects:
-                javascript.extend([jq.js for jq in obj.jqs])
+                javascript.extend([jq.js(self.renderer) for jq in obj.jqs])
+
+            self.renderer.render_all(self.items)
+
+            javascript.append(self.renderer.js)
 
             data = {'javascript': ''.join(javascript),
                     'html': '',
@@ -243,6 +245,10 @@ class BasePageHandler(BaseHandler):
         self.append(Row(Div(args, classes='col-md-12'), **kwargs))
 
     def add_javascript(self, script):
+        if isinstance(script, Object):
+            self += script
+            return
+
         if isinstance(script, BaseAction):
             script = script.js
 

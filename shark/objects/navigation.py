@@ -93,10 +93,10 @@ class NavBrand(Object):
         self.name = self.param(name, ObjectsParam, 'Name and or logo of the application')
         self.url = self.param(url, UrlParam, 'URL to navigate to when the brand name is clicked')
 
-    def get_html(self, html):
-        html.append('<a' + self.base_attributes + ' class="navbar-brand"' + self.url.href + '>')
-        html.inline_render(self.name)
-        html.append('</a>')
+    def get_html(self, renderer):
+        renderer.append('<a' + self.base_attributes + ' class="navbar-brand"' + self.url.href(renderer) + '>')
+        renderer.inline_render(self.name)
+        renderer.append('</a>')
 
 
 class NavLink(Object):
@@ -106,13 +106,13 @@ class NavLink(Object):
         self.url = self.param(url, UrlParam, 'URL to navigate to when the item is clicked')
         self.active = self.param(active, BooleanParam, 'Display as activated')
 
-    def get_html(self, html):
+    def get_html(self, renderer):
         if self.active:
             self.add_class('active')
 
-        html.append('<li' + self.base_attributes + '><a' + self.url.href + '>')
-        html.render('    ', self.name)
-        html.append('</a></li>')
+        renderer.append('<li' + self.base_attributes + '><a' + self.url.href(renderer) + '>')
+        renderer.render('    ', self.name)
+        renderer.append('</a></li>')
 
 
 class NavDivider(Object):
@@ -193,6 +193,6 @@ class Pill(Object):
         if self.active:
             self.add_class('active')
 
-        renderer.append('<li' + self.base_attributes + ' role="presentation"><a{}>'.format(self.action.href))
+        renderer.append('<li' + self.base_attributes + ' role="presentation"><a{}>'.format(self.action.href(renderer)))
         renderer.render('    ', self.items)
         renderer.append('</a></li>')

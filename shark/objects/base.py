@@ -27,5 +27,5 @@ class Script(Object):
         self.init(kwargs)
         self.script = self.param(script, JavascriptParam, 'Javascript to execute')
 
-    def get_html(self, html):
-        html.append_js(self.script.js)
+    def get_html(self, renderer):
+        renderer.append_js(self.script.js(renderer))

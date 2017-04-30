@@ -40,18 +40,18 @@ class Anchor(Object):
                 elif ButtonState.name(self.state) == 'disabled':
                     self.add_class('disabled')
 
-    def get_html(self, html):
+    def get_html(self, renderer):
         if self.new_window == Default:
-            self.new_window = self.url.url.find('://') >= 0 or self.url.url.startswith('//')
+            self.new_window = self.url.url(renderer).find('://') >= 0 or self.url.url(renderer).startswith('//')
 
         if not self.microdata:
-            html.append('<a' + self.url.href + self.base_attributes + iif(self.new_window, ' target="_blank"') + '>')
-            html.inline_render(self.text)
-            html.append('</a>')
+            renderer.append('<a' + self.url.href(renderer) + self.base_attributes + iif(self.new_window, ' target="_blank"') + '>')
+            renderer.inline_render(self.text)
+            renderer.append('</a>')
         else:
-            html.append('<a itemprop="item"' + self.url.href + self.base_attributes + iif(self.new_window, ' target="_blank"') + '><span itemprop="name">')
-            html.inline_render(self.text)
-            html.append('</span></a>')
+            renderer.append('<a itemprop="item"' + self.url.href(renderer) + self.base_attributes + iif(self.new_window, ' target="_blank"') + '><span itemprop="name">')
+            renderer.inline_render(self.text)
+            renderer.append('</span></a>')
 
 
 class Heading(Object):

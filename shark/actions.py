@@ -1,5 +1,7 @@
 import json
 from inspect import ismethod
+
+from shark.base import Object
 from shark.dependancies import escape_html, escape_url
 
 
@@ -30,39 +32,40 @@ class BaseAction:
     - Execute a server-side action
     Anywhere in Shark where you can open a URL (Like Anchor of NavLink, etc) or some JS, you can use any type of action.
     """
-    @property
-    def url(self):
+    def url(self, renderer):
         """
         Places that have anchors &lt;a&gt;, can use this to get the URL
         :return: Plain URL
         """
         return ''
 
-    @property
-    def js(self):
+    def js(self, renderer):
         """
         This will return the Javascript version of any action, including URLs
         :return: Full javascript for any action
         """
         return ''
 
-    @property
-    def href(self):
+    def href(self, renderer):
         """
         Attribute to add to an HTML element that supports href. But for javascript actions we use onclick
         """
-        if self.url:
-            return ' href="{}"'.format(self.url)
-        elif self.js:
-            return ' onclick="{}"'.format(self.js.replace('"', '&quot;'))
+        url = self.url(renderer)
+        js = self.js(renderer)
+        if url:
+            return ' href="{}"'.format(url)
+        elif js:
+            # TODO: Use a proper escape function?
+            return ' onclick="{}"'.format(js.replace('"', '&quot;'))
         return ''
 
-    @property
-    def onclick(self):
+    def onclick(self, renderer):
         """
         Attribute to add to an HTML element that doesn't support href. onclick is used
         """
-        return ' onclick="{}"'.format(self.js.replace('"', '&quot;'))
+        #TODO: Use a proper escape function?
+        js = self.js(renderer)
+        return ' onclick="{}"'.format(js.replace('"', '&quot;'))
 
 
 class URL(BaseAction):
@@ -75,12 +78,10 @@ class URL(BaseAction):
         else:
             self._url = ''
 
-    @property
-    def url(self):
+    def url(self, renderer):
         return self._url
 
-    @property
-    def js(self):
+    def js(self, renderer):
         if not self._url:
             return ''
 
@@ -97,8 +98,13 @@ class JS(BaseAction):
     def __init__(self, js):
         self._js = js
 
-    @property
-    def js(self):
+    def js(self, renderer):
+        return self._js
+
+    def __repr__(self):
+        return self._js
+
+    def __str__(self):
         return self._js
 
 
@@ -107,9 +113,14 @@ class Action(BaseAction):
         self._action = action
         self.kwargs = kwargs
 
-    @property
-    def js(self):
+    def js(self, renderer):
         return 'do_action("{}", {});'.format(self._action, json.dumps(self.kwargs))
+
+    def __repr__(self):
+        return 'Action("{}")'.format(self._action)
+
+    def __str__(self):
+        return 'Action("{}")'.format(self._action)
 
 
 class NoAction(BaseAction):
@@ -117,13 +128,14 @@ class NoAction(BaseAction):
         return False
 
 
-class JQ(BaseAction):
-    def __init__(self, obj_js, obj=None, renderer=None):
+class JQ(BaseAction, Object):
+    def __init__(self, obj_js, obj=None):
         self._js_pre = ''
         self._js_post = ''
         self.obj_js = obj_js
         self.obj = obj
-        self.renderer = renderer
+        self._rendered_js = None
+        self.init({})
 
     def __getattr__(self, item):
         if self.obj:
@@ -193,13 +205,7 @@ class JQ(BaseAction):
         return self
 
     def html(self, content):
-        if self.obj:
-            variable = self.obj.add_variable(content)
-        elif self.renderer:
-            variable = self.renderer.add_variable(content)
-        else:
-            raise NotImplementedError('Nowhere to store the variable')
-
+        variable = self.add_variable(content)
         self._js_pre += '{}.html({});func_{}();'.format(self.obj_js, variable, variable)
         return self
 
@@ -213,6 +219,12 @@ class JQ(BaseAction):
         self._js_pre += '$("head").append("<link id=\'{}\' rel=\'stylesheet\' href=\'{}\' type=\'text/css\' />");'.format(id, resource.url)
         return self
 
-    @property
-    def js(self):
-        return self._js_pre + self._js_post
+    def js(self, renderer):
+        if self._rendered_js is None:
+            renderer.render_variables(self._variables)
+            self._rendered_js = self._js_pre + self._js_post
+
+        return self._rendered_js
+
+    def get_html(self, renderer):
+        renderer.append_js(self.js(renderer))

@@ -121,7 +121,7 @@ class Renderer:
         original_js = self._rendering_js_to
         self._rendering_to = []
         self._rendering_js_to = []
-        self.render('', web_object)
+        self.inline_render(web_object)
         html = self.html
         js = self.js
         self._rendering_to = original
