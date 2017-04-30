@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError, FieldDoesNotExist
 from django.db.models import QuerySet, IntegerField
 from shark.base import Object, objectify, Default, StringParam, BaseParamConverter
 from shark.common import listify, attr, iif
-from shark.param_converters import ObjectsParam, ModelParam, BooleanParam, IntegerParam
+from shark.param_converters import ObjectsParam, ModelParam, BooleanParam, IntegerParam, ListParam
 
 
 class FieldError(Object):
@@ -419,6 +419,7 @@ class DropDownField(BaseField):
     def __init__(self,  name=None, choices=None, label='', auto_focus=False,
                  help_text='', value=Default, **kwargs):
         super().__init__(name, value, **kwargs)
+        self.choices = self.param(choices, ListParam, 'List of choices (value, name)')
         self.label = self.param(label, StringParam, 'Text of the label')
         self.auto_focus = self.param(auto_focus, BooleanParam, 'Place the focus on this element')
         self.help_text = self.param(help_text, StringParam, 'help text for the input field')
