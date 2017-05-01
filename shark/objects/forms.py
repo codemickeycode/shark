@@ -439,7 +439,7 @@ class DropDownField(BaseField):
 
     @ensure_formgroup
     def get_html(self, renderer):
-        renderer.append('<select' + self.base_attributes + '>')
+        renderer.append('<select' + self.base_attributes + ' name="{}">'.format(self.name))
         for choice in self.choices:
             renderer.append('<option value="{}">{}</option>'.format(quote(choice[0]), quote(choice[1])))
         renderer.append('</select>')
