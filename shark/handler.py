@@ -223,12 +223,11 @@ class BasePageHandler(BaseHandler):
             for obj in keep_variable_objects:
                 self.renderer.render_variables(obj.variables)
 
+            self.renderer.render_all(self.items)
+            javascript.append(self.renderer.js)
+
             for obj in keep_variable_objects:
                 javascript.extend([jq.js(self.renderer) for jq in obj.jqs])
-
-            self.renderer.render_all(self.items)
-
-            javascript.append(self.renderer.js)
 
             data = {'javascript': ''.join(javascript),
                     'html': '',
