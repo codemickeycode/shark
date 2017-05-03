@@ -443,7 +443,7 @@ class DropDownField(BaseField):
         for choice in self.choices:
             renderer.append('<option value="{}"{}>{}</option>'.format(
                 quote(choice[0]),
-                ' selected="selected"' if self.value == choice[0] else '',
+                ' selected="selected"' if self.value == str(choice[0]) else '',
                 quote(choice[1])
             ))
         renderer.append('</select>')
