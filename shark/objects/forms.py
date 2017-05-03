@@ -441,7 +441,11 @@ class DropDownField(BaseField):
     def get_html(self, renderer):
         renderer.append('<select' + self.base_attributes + ' name="{}">'.format(self.name))
         for choice in self.choices:
-            renderer.append('<option value="{}">{}</option>'.format(quote(choice[0]), quote(choice[1])))
+            renderer.append('<option value="{}"{}>{}</option>'.format(
+                quote(choice[0]),
+                ' selected="selected"' if self.value == choice[0] else '',
+                quote(choice[1])
+            ))
         renderer.append('</select>')
 
 
