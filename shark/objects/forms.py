@@ -391,6 +391,7 @@ class RadioField(BaseField):
                 pass
 
         self.add_class("radio")
+        self.id_needed()
         self.add_attribute('data-hassection', "true" if self.sub_section else "")
         renderer.append('<div{}>'.format(self.base_attributes))
         renderer.append('    <label>')
@@ -402,12 +403,13 @@ class RadioField(BaseField):
         ))
         renderer.render('        ', self.description)
         renderer.append('    </label>')
-        renderer.append('</div>')
         if self.sub_section:
-            self.id_needed()
-            renderer.append('<div id="{}">'.format(self.id + "_section"))
-            renderer.render('    ', self.sub_section)
-            renderer.append('</div>')
+            renderer.append('    <div id="{}"{}>'.format(
+                self.id + "_section",
+                ' style="display:none;"' if self.radio_value != self.value else ''
+            ))
+            renderer.render('        ', self.sub_section)
+            renderer.append('    </div>')
 
             renderer.append_js("""
 $('#""" + self.id + """').click(function() {
@@ -415,16 +417,17 @@ $('#""" + self.id + """').click(function() {
 })
             """)
 
-            renderer.append_js("""
-    $("input[name='""" + self.name + """']").each(function () {
-        if ((this.id != '""" + self.id + """') && this.dataset.hassection) {
-            var section_id = '#' + this.id + '_section';
-            $('#""" + self.id + """').click(function() {
-                $(section_id).slideUp()
-            })
-        }
-    });
-            """)
+        renderer.append('</div>')
+        renderer.append_js("""
+$("input[name='""" + self.name + """']").each(function () {
+    if ((this.id != '""" + self.id + """') && this.dataset.hassection) {
+        var section_id = '#' + this.id + '_section';
+        $('#""" + self.id + """').click(function() {
+            $(section_id).slideUp()
+        })
+    }
+});
+        """)
 
 
 class DropDownField(BaseField):
