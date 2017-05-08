@@ -1,4 +1,6 @@
 import re
+
+from django.contrib.staticfiles.storage import staticfiles_storage
 from shark.base import Objects, Default, Enumeration, Object, StringParam
 from shark.dependancies import escape_url
 from shark.objects.base import Raw
@@ -76,7 +78,7 @@ class Image(Object):
 
     @classmethod
     def example(cls):
-        return Image('/static/web/img/bart_bg.jpg', 'Niagara Falls', shape=ImageShape.rounded)
+        return Image(staticfiles_storage.url('web/img/bart_bg.jpg'), 'Niagara Falls', shape=ImageShape.rounded)
 
 
 class Thumbnail(Object):
@@ -109,9 +111,9 @@ class Thumbnail(Object):
     @classmethod
     def example(cls):
         return multiple_div_row(
-            Thumbnail('/static/web/img/bart.jpg', width='100%', items='Bart'),
-            Thumbnail('/static/web/img/dylan.jpg', width='100%', items='Dylan'),
-            Thumbnail('/static/web/img/mark.jpg', width='100%', items='Mark')
+            Thumbnail(staticfiles_storage.url('web/img/bart.jpg'), width='100%', items='Bart'),
+            Thumbnail(staticfiles_storage.url('web/img/dylan.jpg'), width='100%', items='Dylan'),
+            Thumbnail(staticfiles_storage.url('web/img/mark.jpg'), width='100%', items='Mark')
         )
 
 
@@ -185,9 +187,9 @@ class Carousel(Object):
     @classmethod
     def example(cls):
         return Carousel([
-            Image('/static/web/img/bart_bg.jpg'),
-            Image('/static/web/img/dylan_bg.jpg'),
-            Image('/static/web/img/mark_bg.jpg')
+            Image(staticfiles_storage.url('web/img/bart_bg.jpg')),
+            Image(staticfiles_storage.url('web/img/dylan_bg.jpg')),
+            Image(staticfiles_storage.url('web/img/mark_bg.jpg'))
         ])
 
 

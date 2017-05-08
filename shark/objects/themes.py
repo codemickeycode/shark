@@ -1,3 +1,4 @@
+from django.contrib.staticfiles.storage import staticfiles_storage
 from shark.base import Object, StringParam
 
 
@@ -21,4 +22,4 @@ class ProfilePanel(Object):
         html.append('    </div>')
         html.append('</div>')
 
-        html.add_resource('/static/shark/css/profile.css', 'css', 'themes', 'profile')
+        html.add_resource(staticfiles_storage.url('shark/css/profile.css'), 'css', 'themes', 'profile')

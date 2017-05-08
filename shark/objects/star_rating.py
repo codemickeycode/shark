@@ -1,3 +1,4 @@
+from django.contrib.staticfiles.storage import staticfiles_storage
 from shark.base import Object
 from shark.param_converters import IntegerParam, BooleanParam
 
@@ -17,5 +18,5 @@ class StarRating(Object):
 
         html.append_js('$("#{}").barrating({{theme: "bootstrap-stars"{}}});'.format(self.id, ', readonly: true' if self.readonly else ''))
 
-        html.add_resource('/static/shark/js/jquery.barrating.min.js', 'js', 'star_rating', 'main')
-        html.add_resource('/static/shark/css/rating-themes/bootstrap-stars.css', 'css', 'star_rating', 'bootstrap')
+        html.add_resource(staticfiles_storage.url('shark/js/jquery.barrating.min.js'), 'js', 'star_rating', 'main')
+        html.add_resource(staticfiles_storage.url('shark/css/rating-themes/bootstrap-stars.css'), 'css', 'star_rating', 'bootstrap')
