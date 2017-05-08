@@ -74,9 +74,7 @@ def get_urls():
                     name='shark_static_page'
             ))
 
-        add_handler(Favicon)
-
-
+    add_handler(Favicon)
     add_handler(SiteMap)
 
     urlpatterns.append(url(r'^markdown_preview/$', markdown_preview, name='django_markdown_preview'))

@@ -1,18 +1,16 @@
 import json
 import logging
-import os
 from collections import Iterable
 
 import bleach
 import pickle
 
 import markdown
-from django.conf import settings
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.core import signing
 from django.core.exceptions import FieldDoesNotExist
 from django.core.urlresolvers import reverse, get_resolver, RegexURLResolver, RegexURLPattern, NoReverseMatch
-from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect
+from django.http import Http404, HttpResponse, HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.middleware.csrf import get_token
 from django.shortcuts import render
 from django.test import Client
@@ -36,7 +34,7 @@ from shark.objects.ui_elements import BreadCrumbs
 from shark.param_converters import ObjectsParam
 from shark.renderer import Renderer
 from shark.settings import SharkSettings
-from .base import Objects, Object, PlaceholderWebObject, Default
+from .base import Objects, Object, PlaceholderWebObject
 from .resources import Resources
 
 unique_name_counter = 0
@@ -500,9 +498,8 @@ class SiteMap(BaseHandler):
 class Favicon(BaseHandler):
     route = '^favicon.ico$'
 
-    def render(self, request):
-        print(staticfiles_storage.url('/static/icons/favicon.ico'))
-        return serve(request, 'favicon.ico', os.path.join(settings.BASE_DIR ,'static/icons'))
+    def render(self, request, *args, **kwargs):
+        return HttpResponseRedirect(staticfiles_storage.url('icons/favicon-32x32.png'))
 
 
 class GoogleVerification(BaseHandler):
