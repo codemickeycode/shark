@@ -239,7 +239,7 @@ class BasePageHandler(BaseHandler):
         return self
 
     def append_row(self, *args, **kwargs):
-        self.append(Row(Div(args, classes='col-md-12'), **kwargs))
+        self += Row(Div(args, classes='col-md-12'), **kwargs)
 
     def add_javascript(self, script):
         if isinstance(script, Object):
