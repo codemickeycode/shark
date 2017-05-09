@@ -9,6 +9,7 @@
         <meta name="description" content="{{ description }}">
 {% endif %}{% if keywords %}        <meta name="keywords" content="{{ keywords }}">
 {% endif %}{% if author %}        <meta name="author" content="{{ author }}">
+{% endif %}{% if extra_meta %}{{ extra_meta|safe }}
 {% endif %}
         <link rel="apple-touch-icon" sizes="57x57" href="{% static "icons/apple-icon-57x57.png" %}">
         <link rel="apple-touch-icon" sizes="60x60" href="{% static "icons/apple-icon-60x60.png" %}">

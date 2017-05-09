@@ -101,6 +101,7 @@ class BasePageHandler(BaseHandler):
         self.description = ''
         self.keywords = ''
         self.author = ''
+        self.extra_meta = ''
         self.robots_index = True
         self.robots_follow = True
 
@@ -147,11 +148,17 @@ class BasePageHandler(BaseHandler):
 
         renderer.resources.add_resources(self.resources)
 
+        if not self.robots_follow:
+            self.extra_meta += '\r\n        <meta name="robots" content="nofollow">'
+        if not self.robots_index:
+            self.extra_meta += '\r\n        <meta name="robots" content="noindex">'
+
         html = render(self.request, 'shark/base.html', {
                                   'title': self.title,
                                   'description': self.description.replace('"', '\''),
                                   'keywords': self.keywords,
                                   'author': self.author,
+                                  'extra_meta': self.extra_meta,
                                   'content': renderer.html,
                                   'extra_css': '\r\n'.join(
                                       [
