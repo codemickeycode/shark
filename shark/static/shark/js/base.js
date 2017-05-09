@@ -39,8 +39,17 @@ function getCookie(name) {
 function bind_forms() {
     // Send form data as AJAX
     $('form[data-async]').on('submit', function(event) {
-        send_action($(this).serialize());
-
+        $.ajax( {
+            url: 'http://host.com/action/',
+            type: 'POST',
+            data: new FormData( this ),
+            processData: false,
+            contentType: false
+            success: function(data, status) {
+                eval(data.javascript);
+                bind_forms();
+            }
+        } );
         event.preventDefault();
     });
 
