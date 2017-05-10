@@ -1,7 +1,7 @@
 from shark.base import Object
 from shark.objects.font_awesome import Icon
 from shark.objects.layout import multiple_div_row
-from shark.param_converters import ObjectsParam, ActionParam
+from shark.param_converters import ObjectsParam, ActionParam, UrlParam
 
 
 class StatBox(Object):
