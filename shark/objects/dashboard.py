@@ -16,7 +16,7 @@ class StatBox(Object):
             'The text of the link under the stat to get more info. If you don\'t enter this it will not show.')
         self.view_more_action = self.param(
             view_more_action,
-            ActionParam,
+            UrlParam,
             'Action to perform when the view more area is clicked')
 
     def get_html(self, html):
