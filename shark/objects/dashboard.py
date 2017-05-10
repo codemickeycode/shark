@@ -36,7 +36,7 @@ class StatBox(Object):
         html.append('            </div>')
         html.append('        </div>')
         html.append('    </div>')
-        html.append('    <a href="#">')
+        html.append('    <a {}>'.format(self.view_more_action.href(html)))
         html.append('        <div class="panel-footer">')
         html.append('            <span class="pull-left">')
         html.render('                ', self.view_more_name)
@@ -51,6 +51,6 @@ class StatBox(Object):
     def example(cls):
         return multiple_div_row(
             StatBox('26', 'New Comments', Icon('comments', 5), 'View Comments', '#'),
-            StatBox('12', 'New Tasks', Icon('tasks', 5), 'View Tasks', '#')
+            StatBox('12', 'New Tasks', Icon('tasks', 5), 'View Tasks', 'http://google.com')
         )
 
