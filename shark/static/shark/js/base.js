@@ -44,7 +44,7 @@ function bind_forms() {
             type: 'POST',
             data: new FormData( this ),
             processData: false,
-            contentType: false
+            contentType: false,
             success: function(data, status) {
                 eval(data.javascript);
                 bind_forms();

@@ -1,10 +1,12 @@
 from shark.base import Text
+from shark.objects.dashboard import StatBox
+from shark.objects.font_awesome import Icon
 from shark.objects.ui_elements import Carousel
 from shark.renderer import Renderer
 
 renderer = Renderer()
 
-renderer.render('', Carousel([Text("Test"), Text("Test2")]))
+renderer.render('', StatBox(12, 'Foorbars', Icon.tachometer, 'More', 'http://google.com'))
 
 print('Output:')
 print('HTML', renderer.html)

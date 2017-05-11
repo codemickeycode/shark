@@ -36,7 +36,7 @@ class StatBox(Object):
         html.append('            </div>')
         html.append('        </div>')
         html.append('    </div>')
-        html.append('    <a {}>'.format(self.view_more_action.href(html)))
+        html.append('    <a{}>'.format(self.view_more_action.href(html)))
         html.append('        <div class="panel-footer">')
         html.append('            <span class="pull-left">')
         html.render('                ', self.view_more_name)
