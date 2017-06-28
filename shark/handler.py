@@ -492,7 +492,7 @@ class SiteMap(BaseHandler):
         lines.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
         handlers = set()
         for url in self.get_urls():
-            lines.append('    <url><loc>{}</loc></url>'.format(request.build_absolute_uri(url.url)))
+            lines.append('    <url><loc>{}</loc></url>'.format(request.build_absolute_uri(url.__str__())))
 
         lines.append('</urlset>')
         return HttpResponse('\r\n'.join(lines))
