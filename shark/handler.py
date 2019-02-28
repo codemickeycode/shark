@@ -160,6 +160,7 @@ class BasePageHandler(BaseHandler):
                                   'keywords': self.keywords,
                                   'author': self.author,
                                   'extra_meta': self.extra_meta,
+                                  'gtm_code': self.gtm_code,
                                   'content': renderer.html,
                                   'extra_css': '\r\n'.join(
                                       [
