@@ -102,6 +102,7 @@ class BasePageHandler(BaseHandler):
         self.keywords = ''
         self.author = ''
         self.extra_meta = ''
+        self.gtm_code = ''
         self.robots_index = True
         self.robots_follow = True
 
