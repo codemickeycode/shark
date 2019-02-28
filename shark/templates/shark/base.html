@@ -34,6 +34,7 @@
         </style>{% endif %}
     </head>
     <body>
+{% if gtm_code %}{{ gtm_code|safe }}{% endif %}
 {{ modals|safe }}{{ content|safe }}
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
